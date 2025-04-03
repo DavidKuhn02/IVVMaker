@@ -1,0 +1,10 @@
+data/
+__pycache__/
+
+Old.py
+Old_Main.py
+UI-DoubleIVV.py
+Testing.py
+K2200_Testing.py
+K2400_Testing.py
+lowVPS_Testing.py
