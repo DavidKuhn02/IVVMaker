@@ -254,6 +254,28 @@ class Functionality:
         if not self.ui.device_handler.smu_devices:   #abort measurement if no SMU connected
             self.abort_measurement('No SMU connected')
             return
+        if self.ui.custom_sweep: #if a custom sweep is selected, read the data from the file
+            try:
+                sweep = self.ui.sweep_creator.read_sweep(self.ui.custom_sweep_file.text())
+            except FileNotFoundError:
+                self.abort_measurement('File not found')
+                return
+            if len(sweep) == 0:
+                self.abort_measurement('Sweep file is empty')
+                return
+            if len(sweep[0]) != 2:
+                self.abort_measurement('Sweep file is not valid')
+                return
+            self.measurement_thread = MeasurementThread( #start the measurement thread
+            limit_I = self.ui.limitI.value()*1e-6, 
+            sweep = sweep,
+            number_of_measurements = self.ui.measurements_per_step.value(),
+            constant_voltage = self.ui.fixed_voltage.value(),
+            time_between_measurements = self.ui.time_between_measurements.value(),
+            time_between_steps = self.ui.time_between_steps.value(),
+            run_sweep = self.ui.run_infinite_checkBox.isChecked(),
+            device_handler = self.ui.device_handler,
+            functionallity = self)
         self.measurement_thread = MeasurementThread( #start the measurement thread
             limit_I = self.ui.limitI.value()*1e-6, 
             sweep = self.ui.sweep_creator.linear_sweep(
@@ -273,7 +295,7 @@ class Functionality:
         
     def receive_data(self, data):
         #print(data[0], data[1])
-        self.ui.canvas.update_plot_live_data(data[0], data[1])
+        self.ui.canvas.update_plot_live_data(data[0], data[1], time_between_measurements=self.ui.time_between_measurements.value()) #update the plot with the new data 
         self.data_saver.write_data(data)
         
     def file_exists_error(self):
