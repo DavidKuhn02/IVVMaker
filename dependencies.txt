@@ -1,6 +1,0 @@
-PyQt5
-pyvisa
-pyvisa-py
-pyusb
-pyserial
-

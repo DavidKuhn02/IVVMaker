@@ -4,7 +4,17 @@
 # - reset(self): Resets the device
 # - return_id(self): Returns the identification string of the device
 # - close(self): Closes the connection to the device
-# - Other methods that are specific to the device like measuring voltage, current, etc.
+# - clear_buffer(self): Clears the buffer of the device
+# - return_port(self): Returns the port of the device
+# - enable_output(self, enable): Enables or disables the output of the device
+# - set_voltage(self, voltage): Sets the voltage of the device
+# - set_limit(self, limitI): Sets the current limit of the device
+# - measure_current(self): Measures the current output of the device
+# - measure_voltage(self): Measures the voltage at the device
+# - measure_resistance(self): Measures the resistance at the device
+# - read_output(self): Reads the output low voltage power devices
+# - enable_highC(self, highC): Enables or disables the high current mode of the device (Currently only for K2600)
+# - return_num_channels(self): Returns the number of channels of the device (Currently only for Rhode&Schwarz NGE100 and HAMEG HMP4040)
 # Currently supported devices: Keithley 2000 Voltmeter, Keithley 2200 SMU, Keithley 2600 SMU, Rhode&Schwarz NGE100 Power Supply and HAMEG HMP4040 Power Supply 
 
 class Dummy_Device: # Dummy Device for testing purposes
