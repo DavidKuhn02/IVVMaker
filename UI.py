@@ -135,12 +135,6 @@ class Ui_MainWindow(QWidget):
         self.measurement_settings_layout.addWidget(self.fixed_voltage, 8, 1)
         self.fixed_voltage.setEnabled(False)
 
-        self.run_infinite_checkBox = QCheckBox()
-        self.run_infinite_checkBox.setEnabled(False)
-        self.run_infinite_checkBox.clicked.connect(self.logic.enable_infinite_measurement)
-        self.measurement_settings_layout.addWidget(self.run_infinite_checkBox, 9, 1)
-        self.measurement_settings_layout.addWidget(QLabel('Run until manually stopped'), 9, 0)
-        
         self.use_custom_sweep_label = QLabel('Use custom sweep file')
         self.measurement_settings_layout.addWidget(self.use_custom_sweep_label, 10, 0)
         self.use_custom_sweep_checkBox = QCheckBox()
@@ -193,9 +187,14 @@ class Ui_MainWindow(QWidget):
         self.canvas_custom_limits.setChecked(False)
         self.canvas_settings_layout.addWidget(self.canvas_custom_limits, 0, 1)
         self.canvas_custom_limits.stateChanged.connect(self.logic.enable_custom_limits)
-        self.canvas_settings_layout.addWidget(QLabel('Use custom limits'), 0, 0)
+        self.canvas_settings_layout.addWidget(QLabel('Use custom limits in the plot'), 0, 0)
 
-        self.canvas_settings_layout.addWidget(QLabel('Voltage limits'), 1, 0)
+        self.canvas_clear_button = QPushButton('Clear plot')
+        self.canvas_clear_button.clicked.connect(self.canvas.clear_plot)
+        self.canvas_settings_layout.addWidget(self.canvas_clear_button, 0, 5)
+
+        self.canvas_xlimits_label = QLabel('Voltage limits')
+        self.canvas_settings_layout.addWidget(self.canvas_xlimits_label, 1, 0)
         self.canvas_lower_x_limit = QDoubleSpinBox()
         self.canvas_lower_x_limit.setRange(-1100, 1100)
         self.canvas_lower_x_limit.setDecimals(2)

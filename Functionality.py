@@ -174,27 +174,25 @@ class Functionality:
 
     def enable_fixed_voltage(self):
         self.fixed_voltage = self.ui.fixed_voltage_checkBox.isChecked()
-        self.run_infinite = self.ui.run_infinite_checkBox.isChecked()
         self.ui.startV.setEnabled(not self.fixed_voltage)
         self.ui.stopV.setEnabled(not self.fixed_voltage)
         self.ui.stepV.setEnabled(not self.fixed_voltage)
+        self.ui.measurements_per_step.setEnabled(not self.fixed_voltage)
         self.ui.time_between_steps.setEnabled(not self.fixed_voltage)
-        self.ui.run_infinite_checkBox.setEnabled(self.fixed_voltage)
         self.ui.use_custom_sweep_checkBox.setEnabled(not self.fixed_voltage)
         self.ui.fixed_voltage.setEnabled(self.fixed_voltage)
         if self.fixed_voltage:
-            self.ui.measurements_per_step_label.setText('Number of \nMeasurements')
+            self.ui.canvas_xlimits_label.setText('Time limits')
+            self.ui.canvas_lower_x_limit.setSuffix(' s')
+            self.ui.canvas_upper_x_limit.setSuffix(' s')
+            self.ui.canvas_lower_x_limit.setValue(0)
+            self.ui.canvas_upper_x_limit.setValue(self.ui.time_between_measurements.value()*100)
         else:
-            self.ui.measurements_per_step_label.setText('Measurements \nper step')
-
-        if self.run_infinite and self.fixed_voltage:
-            self.ui.measurements_per_step.setEnabled(False)
-        else:
-            self.ui.measurements_per_step.setEnabled(True)
-
-    def enable_infinite_measurement(self):
-        self.run_infinite = self.ui.run_infinite_checkBox.isChecked()
-        self.ui.measurements_per_step.setEnabled(not self.run_infinite)
+            self.ui.canvas_xlimits_label.setText('Voltage limits')
+            self.ui.canvas_lower_x_limit.setSuffix(' V')
+            self.ui.canvas_upper_x_limit.setSuffix(' V')
+            self.ui.canvas_lower_x_limit.setValue(self.ui.startV.value())
+            self.ui.canvas_upper_x_limit.setValue(self.ui.stopV.value())
 
     def enable_custom_sweep(self):
         self.ui.custom_sweep = self.ui.use_custom_sweep_checkBox.isChecked()
@@ -220,18 +218,25 @@ class Functionality:
             self.ui.canvas_lower_x_limit.setEnabled(True)
             self.ui.canvas_upper_y_limit.setEnabled(True)
             self.ui.canvas_lower_y_limit.setEnabled(True)
+            self.ui.canvas.custom_limits = True
         else:
             self.ui.canvas_upper_x_limit.setEnabled(False)
             self.ui.canvas_lower_x_limit.setEnabled(False)
             self.ui.canvas_upper_y_limit.setEnabled(False)
             self.ui.canvas_lower_y_limit.setEnabled(False)
-        self.ui.canvas.set_custom_limits([self.ui.canvas_lower_x_limit.value(), self.ui.canvas_upper_x_limit.value()], [self.ui.canvas_lower_y_limit.value(), self.ui.canvas_upper_y_limit.value()])
+            self.ui.canvas.custom_limits = False
+        
+        self.ui.canvas.xlim, self.ui.canvas.ylim = [self.ui.canvas_lower_x_limit.value(), self.ui.canvas_upper_x_limit.value()], [self.ui.canvas_lower_y_limit.value(), self.ui.canvas_upper_y_limit.value()]
+        self.ui.canvas.set_custom_limits()
 
     def set_custom_limits(self):
         self.ui.custom_limits = self.ui.canvas_custom_limits.isChecked()
         if self.ui.custom_limits:
-            self.ui.canvas.set_custom_limits([self.ui.canvas_lower_x_limit.value(), self.ui.canvas_upper_x_limit.value()], [self.ui.canvas_lower_y_limit.value(), self.ui.canvas_upper_y_limit.value()])
+            self.ui.canvas.custom_limits = True
+            self.ui.canvas.xlim, self.ui.canvas.ylim = [self.ui.canvas_lower_x_limit.value(), self.ui.canvas_upper_x_limit.value()], [self.ui.canvas_lower_y_limit.value(), self.ui.canvas_upper_y_limit.value()]
+            self.ui.canvas.set_custom_limits()
         else:
+            self.ui.canvas.custom_limits = False
             self.ui.canvas.set_custom_limits(None, None)
 
     def K2200_warning(self):
@@ -254,7 +259,7 @@ class Functionality:
         if not self.ui.device_handler.smu_devices:   #abort measurement if no SMU connected
             self.abort_measurement('No SMU connected')
             return
-        if self.ui.custom_sweep: #if a custom sweep is selected, read the data from the file
+        if self.ui.use_custom_sweep_checkBox.isChecked(): #if a custom sweep is selected, read the data from the file
             try:
                 sweep = self.ui.sweep_creator.read_sweep(self.ui.custom_sweep_file.text())
             except FileNotFoundError:
@@ -266,35 +271,31 @@ class Functionality:
             if len(sweep[0]) != 2:
                 self.abort_measurement('Sweep file is not valid')
                 return
-            self.measurement_thread = MeasurementThread( #start the measurement thread
-            limit_I = self.ui.limitI.value()*1e-6, 
-            sweep = sweep,
-            number_of_measurements = self.ui.measurements_per_step.value(),
-            constant_voltage = self.ui.fixed_voltage.value(),
-            time_between_measurements = self.ui.time_between_measurements.value(),
-            time_between_steps = self.ui.time_between_steps.value(),
-            run_sweep = self.ui.run_infinite_checkBox.isChecked(),
-            device_handler = self.ui.device_handler,
-            functionallity = self)
-        self.measurement_thread = MeasurementThread( #start the measurement thread
-            limit_I = self.ui.limitI.value()*1e-6, 
+        else: #Create sweep from the given params if no custom sweep is selected
+            if self.ui.startV.value() == self.ui.stopV.value():
+                self.abort_measurement('Start and stop voltage are the same')
+                return
             sweep = self.ui.sweep_creator.linear_sweep(
                 start = self.ui.startV.value(), 
                 stop = self.ui.stopV.value(), 
                 steps = self.ui.stepV.value(), 
-                number_of_measurements = self.ui.measurements_per_step.value()),
-                constant_voltage = self.ui.fixed_voltage.value(),
-                time_between_measurements = self.ui.time_between_measurements.value(),
-                time_between_steps = self.ui.time_between_steps.value(),
-                run_sweep = self.ui.run_infinite_checkBox.isChecked(),
-                device_handler = self.ui.device_handler,
-                functionallity = self
+                number_of_measurements = self.ui.measurements_per_step.value())
+            
+        self.measurement_thread = MeasurementThread( #start the measurement thread
+            limit_I = self.ui.limitI.value()*1e-6, 
+            sweep = sweep,
+            constant_voltage = self.ui.fixed_voltage.value(),
+            time_between_measurements = self.ui.time_between_measurements.value(),
+            time_between_steps = self.ui.time_between_steps.value(),
+            run_sweep = not self.ui.fixed_voltage_checkBox.isChecked(),
+            device_handler = self.ui.device_handler,
+            functionallity = self
                 )
+        self.ui.canvas.constant_voltage = self.ui.fixed_voltage_checkBox.isChecked()
         self.measurement_thread.start() #start the measurement
         self.measurement_thread.data_signal.connect(self.receive_data)  #handle collected data
         
     def receive_data(self, data):
-        #print(data[0], data[1])
         self.ui.canvas.update_plot_live_data(data[0], data[1], time_between_measurements=self.ui.time_between_measurements.value()) #update the plot with the new data 
         self.data_saver.write_data(data)
         
@@ -410,11 +411,9 @@ class MeasurementThread(QThread):
         print('Measurement Thread started')
 
     def run(self):
-        if self.run_sweep:
-            self.start_measurement(self.voltages[0])
+        if self.sweep:
             self.run_sweep()
         else:
-            self.start_measurement(self.constant_voltage)
             self.run_constant()
         self.functionallity.finish_measurement()
 
@@ -424,7 +423,7 @@ class MeasurementThread(QThread):
             smu.set_limit(self.limit_I)
             smu.enable_output(True)
             smu.clear_buffer()
-        if start != 0:
+        if start == 0:
             return
         else:
             self.rampup(start)
@@ -437,8 +436,11 @@ class MeasurementThread(QThread):
 
         for voltage in voltages:
             self.set_voltages(voltage) 
+            time.sleep(0.1)
+        self.set_voltages(target)
 
     def run_sweep(self):
+        self.start_measurement(self.voltages[0])
         for i in range(len(self.voltages)):
             if not self.running:
                 break
@@ -453,6 +455,7 @@ class MeasurementThread(QThread):
                 time.sleep(self.time_between_measurements)
 
     def run_constant(self):
+        self.start_measurement(self.constant_voltage)
         while self.running:
             data = self.read_data()
             self.send_data(data)
