@@ -2,6 +2,7 @@
 This piece of software is intended to be used to measure IV characteristics of electronic devices using a SMU. It features a user friendly GUI to control your measurement.
 
 # Feautures
+The following features are currently included:
 -GUI to set the parameters for the measurement and control the devices for the measurement
 -Real time plotting of the data during the measurement
 -Support for multiple devices (currently implemented):
