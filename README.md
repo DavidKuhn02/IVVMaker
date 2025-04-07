@@ -1,15 +1,15 @@
 # IVVMaker
 This piece of software is intended to be used to measure IV characteristics of electronic devices using a SMU. It features a user friendly GUI to control your measurement.
 
-# Feautures
+# Features
 The following features are currently included:
--GUI to set the parameters for the measurement and control the devices for the measurement
--Real time plotting of the data during the measurement
--Support for multiple devices (currently implemented):
-    -SMU (Keithley 2200 series, Keithley 2400 series, Keithley 2600 series)
-    -Voltage Meter (Keithley 2000 series)
-    -Resistance Meter (Keithley 2000 series)
-    -Low Voltage Power Supply (HAMEG HMP4040 series, Rhode & Schwarz NGE100 series) 
+- GUI to set the parameters for the measurement and control the devices for the measurement
+- Real time plotting of the data during the measurement
+- Support for multiple devices (currently implemented):
+    - SMU (Keithley 2200 series, Keithley 2400 series, Keithley 2600 series)
+    - Voltage Meter (Keithley 2000 series)
+    - Resistance Meter (Keithley 2000 series)
+    - Low Voltage Power Supply (HAMEG HMP4040 series, Rhode & Schwarz NGE100 series) 
 
 
 # Installation and Usage
