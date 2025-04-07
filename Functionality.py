@@ -341,9 +341,7 @@ class Functionality:
             if len(sweep) == 0:
                 self.abort_measurement('Sweep file is empty')
                 return
-            if len(sweep[0]) != 2:
-                self.abort_measurement('Sweep file is not valid')
-                return
+
         else: #Create sweep from the given params if no custom sweep is selected
             if self.ui.startV.value() == self.ui.stopV.value():
                 self.abort_measurement('Start and stop voltage are the same')
@@ -473,7 +471,7 @@ class Sweep: #class that can create voltage sweeps, for now only linear sweeps a
         return np.column_stack([voltages, n])
     
     def read_sweep(self, file):
-        return np.loadtxt(file, delimiter = ' ') #reads a csv file with the sweep data
+        return np.loadtxt(file, delimiter = ' ', usecols=[0, 1]) #reads a csv file with the sweep data
     
 class DataSaver():
     #This class is responsible for saving the data to a file

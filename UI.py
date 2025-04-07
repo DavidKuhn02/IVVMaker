@@ -24,21 +24,26 @@ class Ui_MainWindow(QWidget):
         self.layout.setAlignment(QtCore.Qt.AlignTop) #Aligns the layout to the top
         self.layout.setAlignment(QtCore.Qt.AlignLeft) #Aligns the layout to the left
 
-        self.device_scrollArea = QScrollArea()  #Creates a scroll area for the devices
+        self.device_groupBox = QGroupBox("Connected Devices")  #Creates a group box for the connected devices
+       
+        self.device_groupBox_layout = QVBoxLayout(self.device_groupBox)   
+
+        self.device_scrollArea = QScrollArea()
         self.device_scrollArea.setWidgetResizable(True)
-        self.device_scrollArea.setMaximumSize(600, 600)
-        
-        self.device_scrollWidget = QWidget()  #Creates a widget for the scroll area
-        self.device_scrollArea.setWidget(self.device_scrollWidget)  #Sets the widget for the scroll area
-        self.layout.addWidget(self.device_scrollArea, 0, 0, 2, 1) #Adds the scroll area to the layout
+        self.device_groupBox.setMaximumSize(600, 600) 
 
-        self.device_scrollLayout = QVBoxLayout(self.device_scrollWidget) #Creates a layout for the scroll area
+        self.device_scrollWidget = QWidget()
+        self.device_scrollLayout = QVBoxLayout(self.device_scrollWidget)
         self.device_scrollLayout.setAlignment(QtCore.Qt.AlignTop)
-        self.device_widgets = [] #List of widgets for the devices
-        self.device_scrollWidget.setLayout(self.device_scrollLayout)
+        self.device_scrollWidget.setLayout(self.device_scrollLayout)    
 
-        self.active_devices_groupBox = QGroupBox('Connected Devices')  #Creates a group box for the active devices
+        self.device_widgets = []  # List to store the device widgets
 
+        self.device_scrollArea.setWidget(self.device_scrollWidget)  
+
+        self.device_groupBox_layout.addWidget(self.device_scrollArea)   
+         
+        self.layout.addWidget(self.device_groupBox, 0, 0, 2, 1)
 
         self.add_device_box = QGroupBox('Manage Devices')  #Creates a group box for adding devices
         self.add_device_layout = QVBoxLayout()
