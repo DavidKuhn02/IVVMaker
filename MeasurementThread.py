@@ -21,7 +21,7 @@ class MeasurementThread(QThread):
         self.functionallity = functionallity #Passes the logic into this class, as this could be needed
         self.sweep = run_sweep #True if the measurement is a sweep measurement, False if it is a constant voltage measurement
         print('Measurement started')  #Debug message
-
+        print('Sweep:', sweep)  #Debug message
     def run(self): 
         #Main function that runs the measurement
         #This function is called when the thread is started
