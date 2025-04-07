@@ -4,7 +4,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 import pyvisa as visa
 import Devices
 import Plotting
-from Functionality import Functionality, Device_Handler, Sweep, MeasurementThread
+from Functionality import Functionality, Device_Handler, Sweep
 
 class Ui_MainWindow(QWidget):
     def __init__(self):
@@ -37,6 +37,9 @@ class Ui_MainWindow(QWidget):
         self.device_widgets = [] #List of widgets for the devices
         self.device_scrollWidget.setLayout(self.device_scrollLayout)
 
+        self.active_devices_groupBox = QGroupBox('Connected Devices')  #Creates a group box for the active devices
+
+
         self.add_device_box = QGroupBox('Manage Devices')  #Creates a group box for adding devices
         self.add_device_layout = QVBoxLayout()
         self.add_device_layout.setAlignment(QtCore.Qt.AlignTop)
@@ -46,7 +49,7 @@ class Ui_MainWindow(QWidget):
         self.select_decive.addItem('Select Device')
         self.add_device_layout.addWidget(self.select_decive)
 
-        self.refresh_button = QPushButton('Refresh Devices')  #Refresh Button
+        self.refresh_button = QPushButton('Search Devices')  #Refresh Button
         self.refresh_button.clicked.connect(self.logic.refresh_devices)
         self.add_device_layout.addWidget(self.refresh_button)
 
@@ -54,7 +57,7 @@ class Ui_MainWindow(QWidget):
         self.add_device_button.clicked.connect(self.logic.add_device_entry)
         self.add_device_layout.addWidget(self.add_device_button)
         
-        self.add_all_devices_button = QPushButton('Refresh and add all connected Devices')
+        self.add_all_devices_button = QPushButton('Search and add all connected Devices')
         self.add_all_devices_button.clicked.connect(self.logic.add_all_devices)
         self.add_device_layout.addWidget(self.add_all_devices_button)
 
@@ -121,7 +124,7 @@ class Ui_MainWindow(QWidget):
         self.limitI.setValue(2e5)
         self.measurement_settings_layout.addWidget(self.limitI, 6, 1)
 
-        self.measurement_settings_layout.addWidget(QLabel('Use constant voltage'), 7, 0)
+        self.measurement_settings_layout.addWidget(QLabel('Use constant voltage'), 7, 0) #Constant Voltage CheckBox and Label
         self.fixed_voltage_checkBox = QCheckBox()
         self.fixed_voltage_checkBox.stateChanged.connect(self.logic.enable_fixed_voltage)
         self.measurement_settings_layout.addWidget(self.fixed_voltage_checkBox, 7, 1)
@@ -135,7 +138,7 @@ class Ui_MainWindow(QWidget):
         self.measurement_settings_layout.addWidget(self.fixed_voltage, 8, 1)
         self.fixed_voltage.setEnabled(False)
 
-        self.use_custom_sweep_label = QLabel('Use custom sweep file')
+        self.use_custom_sweep_label = QLabel('Use custom sweep file') #Custom Sweep CheckBox and Label
         self.measurement_settings_layout.addWidget(self.use_custom_sweep_label, 10, 0)
         self.use_custom_sweep_checkBox = QCheckBox()
         self.measurement_settings_layout.addWidget(self.use_custom_sweep_checkBox, 10, 1)
@@ -143,78 +146,78 @@ class Ui_MainWindow(QWidget):
         self.use_custom_sweep_label.setToolTip('The sweep file should be a csv file with the first column containing the voltages  '
         '\nand the second column containing the number of measurements at each voltage')
 
-        self.custom_sweep_file = QLineEdit()
+        self.custom_sweep_file = QLineEdit()   #Path to the custom sweep file
         self.measurement_settings_layout.addWidget(self.custom_sweep_file, 11, 0, 1, 2)
         self.custom_sweep_file.setEnabled(False)
         self.custom_sweep_file.setPlaceholderText('Enter path to sweep file')
 
-        line = QFrame()
+        line = QFrame()   #Line to visaully separate the settings from the filename
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
         self.measurement_settings_layout.addWidget(line, 12, 0)
 
-        self.measurement_settings_layout.addWidget(QLabel('Select a file path and filename for the data'), 13, 0)
+        self.measurement_settings_layout.addWidget(QLabel('Select a file path and filename for the data'), 13, 0) #Title for the file path and filename
 
-        self.folder_path = QLineEdit()
+        self.folder_path = QLineEdit()    #Folder path for the data
         self.measurement_settings_layout.addWidget(self.folder_path, 14, 0)
         self.folder_path.setText('IVVMaker/data')
 
-        self.search_folder_path = QPushButton('...')
+        self.search_folder_path = QPushButton('...')   #Button to select the folder path
         self.search_folder_path.clicked.connect(self.logic.select_folder)
         self.measurement_settings_layout.addWidget(self.search_folder_path, 14, 1   )
 
-        self.filename = QLineEdit()
+        self.filename = QLineEdit() #Filename for the datafile
         self.filename.setPlaceholderText('Enter filename')
         self.measurement_settings_layout.addWidget(self.filename, 15, 0)
 
-        self.filename_suffix = QComboBox()
+        self.filename_suffix = QComboBox()   #Select the file suffix (default is .csv)
         self.filename_suffix.addItems(['.csv', '.dat', '.txt'])
         self.filename_suffix.setCurrentIndex(0)
         self.measurement_settings_layout.addWidget(self.filename_suffix, 15, 1)
 
-        self.measurement_settings_box.setLayout(self.measurement_settings_layout)
+        self.measurement_settings_box.setLayout(self.measurement_settings_layout)  #Add the layout to the group box
         self.layout.addWidget(self.measurement_settings_box, 3, 0, 3, 1)
         
-        self.canvas = Plotting.PlotCanvas(self)
+        self.canvas = Plotting.PlotCanvas(self)     #Initialize the plot canvas
         self.layout.addWidget(self.canvas, 0, 1, 5, 3)
 
-        self.canvas_settings = QGroupBox('Plot settings')
+        self.canvas_settings = QGroupBox('Plot settings')    #Create a group box for the plot settings
         self.canvas_settings_layout = QGridLayout()
         self.canvas_settings_layout.setAlignment(QtCore.Qt.AlignTop)
         self.layout.addWidget(self.canvas_settings, 5, 1, 1, 3)
 
-        self.canvas_custom_limits = QCheckBox()
+        self.canvas_custom_limits = QCheckBox()    #Custom Limits CheckBox and Label
         self.canvas_custom_limits.setChecked(False)
         self.canvas_settings_layout.addWidget(self.canvas_custom_limits, 0, 1)
         self.canvas_custom_limits.stateChanged.connect(self.logic.enable_custom_limits)
         self.canvas_settings_layout.addWidget(QLabel('Use custom limits in the plot'), 0, 0)
 
-        self.canvas_clear_button = QPushButton('Clear plot')
+        self.canvas_clear_button = QPushButton('Clear plot')    #Clear Plot Button (Clears the plot and old data, if meausrement is running, the live data is not cleared)
         self.canvas_clear_button.clicked.connect(self.canvas.clear_plot)
         self.canvas_settings_layout.addWidget(self.canvas_clear_button, 0, 5)
 
-        self.canvas_xlimits_label = QLabel('Voltage limits')
+        self.canvas_xlimits_label = QLabel('Voltage limits')      #Limits of the x axis, default is voltage, switches to seconds if constant voltage is enabled
         self.canvas_settings_layout.addWidget(self.canvas_xlimits_label, 1, 0)
         self.canvas_lower_x_limit = QDoubleSpinBox()
         self.canvas_lower_x_limit.setRange(-1100, 1100)
         self.canvas_lower_x_limit.setDecimals(2)
         self.canvas_lower_x_limit.setSuffix(' V')
-        self.canvas_lower_x_limit.setValue(-200)
+        self.canvas_lower_x_limit.setValue(self.startV.value())
         self.canvas_settings_layout.addWidget(self.canvas_lower_x_limit, 1, 1)
         self.canvas_settings_layout.addWidget(QLabel('to'), 1, 2)
         self.canvas_upper_x_limit = QDoubleSpinBox()
         self.canvas_upper_x_limit.setRange(-1100, 1100)
         self.canvas_upper_x_limit.setDecimals(2)
         self.canvas_upper_x_limit.setSuffix(' V')
-        self.canvas_upper_x_limit.setValue(0)
+        self.canvas_upper_x_limit.setValue(self.stopV.value())
         self.canvas_settings_layout.addWidget(self.canvas_upper_x_limit, 1, 3)
 
-        self.canvas_settings_layout.addWidget(QLabel('Current limits'), 2, 0)
+        self.canvas_settings_layout.addWidget(QLabel('Current limits'), 2, 0)  #Limit for the y axis, default is current, maybe implement a second y axis for additional voltage measurements later
         self.canvas_lower_y_limit = QDoubleSpinBox()
         self.canvas_lower_y_limit.setRange(-1e6, 1e6)
         self.canvas_lower_y_limit.setDecimals(2)
         self.canvas_lower_y_limit.setSuffix(' uA')
-        self.canvas_lower_y_limit.setValue(-10)
+        self.canvas_lower_y_limit.setValue(-self.limitI.value())
         self.canvas_settings_layout.addWidget(self.canvas_lower_y_limit, 2, 1)
         self.canvas_settings_layout.addWidget(QLabel('to'), 2, 2)
         self.canvas_upper_y_limit = QDoubleSpinBox()
@@ -224,43 +227,46 @@ class Ui_MainWindow(QWidget):
         self.canvas_upper_y_limit.setValue(0)
         self.canvas_settings_layout.addWidget(self.canvas_upper_y_limit, 2, 3)
 
-        self.canvas_lower_x_limit.setEnabled(False)
+        self.canvas_lower_x_limit.setEnabled(False)  #Disable the limits until the user checks the box
         self.canvas_upper_x_limit.setEnabled(False)
         self.canvas_lower_y_limit.setEnabled(False)
         self.canvas_upper_y_limit.setEnabled(False)
 
-        self.canvas_lower_x_limit.editingFinished.connect(self.logic.set_custom_limits)
+        self.canvas_lower_x_limit.editingFinished.connect(self.logic.set_custom_limits)  #Connects the limits to the logic function
         self.canvas_upper_x_limit.editingFinished.connect(self.logic.set_custom_limits)
         self.canvas_lower_y_limit.editingFinished.connect(self.logic.set_custom_limits)
         self.canvas_upper_y_limit.editingFinished.connect(self.logic.set_custom_limits)
 
         self.canvas_settings_layout.addWidget(line, 3, 0, 1, 5)
-        self.canvas_settings_layout.addWidget(QLabel('Add a previous measurement to the plot'), 4, 0)
+        self.canvas_settings_layout.addWidget(QLabel('Add a previous measurement to the plot'), 4, 0)   #Title for the option to plot old measurements 
         
-        self.select_canvas_file = QLineEdit()
+        self.select_canvas_file = QLineEdit()     #Path to the file to be plotted
         self.select_canvas_file.setPlaceholderText('Select file')
         self.canvas_settings_layout.addWidget(self.select_canvas_file, 5, 0, 1, 4)
 
-        self.search_canvas_file = QPushButton('...')
+        self.search_canvas_file = QPushButton('...') #Button to select the file to be plotted
         self.search_canvas_file.clicked.connect(self.logic.select_canvas_file)
         self.canvas_settings_layout.addWidget(self.search_canvas_file, 5, 4, 1, 1)
 
-        self.canvas_load_file = QPushButton('Load file')
+        self.canvas_load_file = QPushButton('Load file') #Button to load the file to be plotted
         self.canvas_load_file.clicked.connect(self.logic.load_canvas_file)
         self.canvas_settings_layout.addWidget(self.canvas_load_file, 5, 5, 1, 1)
 
-        self.canvas_settings.setLayout(self.canvas_settings_layout)
+        self.canvas_settings.setLayout(self.canvas_settings_layout)  #Add the layout to the group box
 
-        self.start_button = QPushButton('Start Measurement')
+        self.start_button = QPushButton('Start Measurement') #Button to start the measurement 
         self.start_button.clicked.connect(self.logic.start_measurement)
         self.layout.addWidget(self.start_button, 6, 0, 1, 3)   
 
-        self.abort_button = QPushButton('Abort Measurment')
+        self.abort_button = QPushButton('Abort Measurment') #Button to abort/stop the measurement
         self.abort_button.clicked.connect(lambda: self.logic.abort_measurement('Manually aborted'))
         self.layout.addWidget(self.abort_button, 6, 3, 1, 1)
         self.abort_button.setEnabled(False)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event): # Ask the user if they want to quit
+        # If the user wants to quit, close all devices and quit the application
+        # If the user does not want to quit, ignore the event
+        # This is a standard close event for PyQt5 applications
         reply = QMessageBox.question(self, 'Quit?', 'Are you sure you want to quit?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             event.accept()
