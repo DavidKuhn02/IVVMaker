@@ -87,7 +87,7 @@ class Ui_MainWindow(QWidget):
         self.stopV.setRange(-1100, 1100)
         self.stopV.setDecimals(0)
         self.stopV.setSuffix(' V')
-        self.stopV.setValue(3)
+        self.stopV.setValue(-160)
         self.measurement_settings_layout.addWidget(self.stopV, 1, 1)
 
         self.measurement_settings_layout.addWidget(QLabel('Step Voltage [V]'), 2, 0)  #Step Voltage SpinBox and Label
@@ -95,7 +95,7 @@ class Ui_MainWindow(QWidget):
         self.stepV.setRange(-1100, 1100)
         self.stepV.setDecimals(2)
         self.stepV.setSuffix(' V')
-        self.stepV.setValue(.1)
+        self.stepV.setValue(-1)
         self.measurement_settings_layout.addWidget(self.stepV, 2, 1)
 
         self.measurement_settings_layout.addWidget(QLabel('Time between \nsteps [s]'), 3, 0)  #Delay SpinBox and Label
@@ -111,14 +111,14 @@ class Ui_MainWindow(QWidget):
         self.time_between_measurements.setRange(0, 1000)
         self.time_between_measurements.setDecimals(2)  
         self.time_between_measurements.setSuffix(' s')
-        self.time_between_measurements.setValue(.1)
+        self.time_between_measurements.setValue(.4)
         self.measurement_settings_layout.addWidget(self.time_between_measurements, 4, 1)
 
         self.measurements_per_step_label = QLabel('Measurements \nper step')  #Delay SpinBox and Label
         self.measurement_settings_layout.addWidget(self.measurements_per_step_label, 5, 0)  
         self.measurements_per_step = QSpinBox()
         self.measurements_per_step.setRange(1, 1000)
-        self.measurements_per_step.setValue(10)
+        self.measurements_per_step.setValue(5)
         self.measurement_settings_layout.addWidget(self.measurements_per_step, 5, 1)
 
         self.measurement_settings_layout.addWidget(QLabel('Limit Current [uA]'), 6, 0)  #Limit Current SpinBox and Label
@@ -126,7 +126,7 @@ class Ui_MainWindow(QWidget):
         self.limitI.setRange(0, 1e6)
         self.limitI.setDecimals(2)
         self.limitI.setSuffix(' uA')
-        self.limitI.setValue(2e5)
+        self.limitI.setValue(10)
         self.measurement_settings_layout.addWidget(self.limitI, 6, 1)
 
         self.measurement_settings_layout.addWidget(QLabel('Use constant voltage'), 7, 0) #Constant Voltage CheckBox and Label
