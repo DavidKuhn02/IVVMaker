@@ -222,14 +222,14 @@ class Ui_MainWindow(QWidget):
         self.canvas_lower_y_limit.setRange(-1e6, 1e6)
         self.canvas_lower_y_limit.setDecimals(2)
         self.canvas_lower_y_limit.setSuffix(' uA')
-        self.canvas_lower_y_limit.setValue(-self.limitI.value())
+        self.canvas_lower_y_limit.setValue(0)
         self.canvas_settings_layout.addWidget(self.canvas_lower_y_limit, 2, 1)
         self.canvas_settings_layout.addWidget(QLabel('to'), 2, 2)
         self.canvas_upper_y_limit = QDoubleSpinBox()
         self.canvas_upper_y_limit.setRange(-1e6, 1e6)
         self.canvas_upper_y_limit.setDecimals(2)
         self.canvas_upper_y_limit.setSuffix(' uA')
-        self.canvas_upper_y_limit.setValue(0)
+        self.canvas_upper_y_limit.setValue(-self.limitI.value())
         self.canvas_settings_layout.addWidget(self.canvas_upper_y_limit, 2, 3)
 
         self.canvas_lower_x_limit.setEnabled(False)  #Disable the limits until the user checks the box
