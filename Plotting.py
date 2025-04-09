@@ -104,14 +104,14 @@ class PlotCanvas(FigureCanvas):
         if file in self.labels:
             return
         try:
-            x, y = np.loadtxt(file, skiprows = 1, unpack = True, usecols = [0, 1])
+            x, y = np.loadtxt(file, skiprows = 2, unpack = True, usecols = [0, 1])
         except FileNotFoundError:
             print(file, ' not found')
 
         self.old_xdata.append(x)
         self.old_ydata.append(y)
         self.labels.append(file)
-        self.update_plot_old_data()
+        self.update_plot()
  
     def set_custom_limits(self):
         #Set cutom limits for the plot
@@ -120,4 +120,4 @@ class PlotCanvas(FigureCanvas):
             self.ax.set_xlim(self.xlim[0], self.xlim[1])
         if self.ylim is not None:
             self.ax.set_ylim(self.ylim[0], self.ylim[1])
-        self.draw()#
+        self.draw()

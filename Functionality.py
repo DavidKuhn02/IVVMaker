@@ -395,7 +395,7 @@ class Functionality:
 
     def finish_measurement(self): #Function that is called when the measurement is finished ordinally 
         self.ui_changes_stop()
-        self.data_saver.file.close()
+        self.data_saver.close()
         print('Measurement finished and data saved to ' + self.data_saver.filepath)
         
 class Device_Handler:   #Class that handles the devices and their IDs
@@ -521,3 +521,14 @@ class DataSaver():
         except:
             print('Data could not be safed')
 
+    def sweep_header(self, num_of_steps):
+        #This function writes the header for the sweep data
+        self.file.write('Steps: {} \n'.format(num_of_steps))
+    
+    def constant_header(self, time_between_points):
+        #This function writes the header for the constant voltage data
+        self.file.write('Time between points: {} \n'.format(time_between_points))
+
+    def close(self):
+        #This function closes the file
+        self.file.close()
