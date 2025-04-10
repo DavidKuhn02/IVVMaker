@@ -3,6 +3,7 @@
 # - __init__(self, port, rm): Constructor that initializes the device
 # - reset(self): Resets the device
 # - return_id(self): Returns the identification string of the device
+# - return_assigned_id(self): Returns the port of the device
 # - close(self): Closes the connection to the device
 # - clear_buffer(self): Clears the buffer of the device
 # - return_port(self): Returns the port of the device
@@ -18,14 +19,14 @@
 # Currently supported devices: Keithley 2000 Voltmeter, Keithley 2200 SMU, Keithley 2600 SMU, Rhode&Schwarz NGE100 Power Supply and HAMEG HMP4040 Power Supply 
 
 class Dummy_Device: # Dummy Device for testing purposes
-    def __init__(self, port, rm): 
+    def __init__(self, port, id, rm): 
         self.port = port
+        self.assigned_id = id
         self.reset()
 
     def reset(self):
         print('Resetting Dummy')
         
-
     def clear_buffer(self):
         print('Clearing Dummy Buffer')
         
@@ -35,6 +36,9 @@ class Dummy_Device: # Dummy Device for testing purposes
     def return_id(self):
         return 'Dummy Device'
     
+    def return_assigned_id(self):
+        return self.assigned_id
+
     def close(self):
         print('Closing Dummy')
         
@@ -58,11 +62,11 @@ class Dummy_Device: # Dummy Device for testing purposes
         return 1
 
 class K2000: # K2000 Voltmeter (able to measure Voltage/Resistance)
-    def __init__(self, port, rm):
+    def __init__(self, port, id, rm):
         self.device = rm.open_resource(port)
         self.port = port
-        self.device.write('RST*')
-
+        self.assigned_id = id
+        self.reset()
     def reset(self):
         self.device.write('RST*')
 
@@ -74,6 +78,9 @@ class K2000: # K2000 Voltmeter (able to measure Voltage/Resistance)
 
     def return_id(self):
         return self.device.query('*IDN?')
+    
+    def return_assigned_id(self):
+        return self.assigned_id
     
     def close(self):
         self.device.close()
@@ -89,9 +96,10 @@ class K2000: # K2000 Voltmeter (able to measure Voltage/Resistance)
         return resistance
     
 class K2200:
-    def __init__(self, port, rm):
+    def __init__(self, port, id, rm):
         self.device = rm.open_resource(port)
         self.port = port
+        self.assigned_id = id
         self.reset()
         self.clear_buffer()
 
@@ -106,6 +114,9 @@ class K2200:
 
     def return_id(self):
         return self.device.query('*IDN?')
+    
+    def return_assigned_id(self):
+        return self.assigned_id
     
     def close(self):
         self.device.close()
@@ -131,9 +142,10 @@ class K2200:
         return voltage
 
 class K2400:
-    def __init__(self, port, rm):
+    def __init__(self, port, id, rm):
         self.device = rm.open_resource(port)
         self.port = port
+        self.assigned_id = id
         self.device.reset()
         self.device.clear_buffer()
         self.device.write(':SOUR:FUNC VOLT') # Sets Source to voltage mode (needed for IV Curves)
@@ -150,6 +162,9 @@ class K2400:
 
     def return_id(self):
         return self.device.query('*IDN?')
+    
+    def return_assigned_id(self):
+        return self.assigned_id
     
     def close(self):
         self.device.close()
@@ -175,9 +190,10 @@ class K2400:
         return voltage
 
 class K2600: #K2600 SMU (up to 200V bias Voltage)
-    def __init__(self, port, rm):
+    def __init__(self, port, id, rm):
         self.device = rm.open_resource(port)
         self.port = port
+        self.assigned_id = id
         self.reset()
 
     def reset(self):
@@ -192,6 +208,9 @@ class K2600: #K2600 SMU (up to 200V bias Voltage)
 
     def return_id(self):
         return self.device.query('*IDN?')
+    
+    def return_assigned_id(self):
+        return self.assigned_id
     
     def close(self):
         self.device.close()
@@ -223,8 +242,10 @@ class K2600: #K2600 SMU (up to 200V bias Voltage)
         return voltage
 
 class LowVoltagePowerSupplies: #Rhode&Schwarz NGE 100 and HAMEG HMP4040 
-    def __init__(self,  port, rm):
+    def __init__(self,  port, id, rm):
         self.device = rm.open_resource(port)
+        self.port = port
+        self.return_assigned_id = id
         self.device.write('*RST')
         #Test if the device is a Rhode&Schwarz NGE 100 or a HAMEG HMP4040 by testing if channel 4 exists (only i  HAMEG). Should maybe be changed in seperate classes, if more functionallity is needed.
         self.device.write('INST:NSEL 4')
@@ -245,6 +266,9 @@ class LowVoltagePowerSupplies: #Rhode&Schwarz NGE 100 and HAMEG HMP4040
 
     def return_id(self):
         return self.device.query('*IDN?')
+    
+    def return_assigned_id(self):
+        return self.return_assigned_id
     
     def return_num_channels(self):
         return self.number_of_channels

@@ -20,8 +20,7 @@ class MeasurementThread(QThread):
         self.running = True #flag that indicates if the measurement is running
         self.functionallity = functionallity #Passes the logic into this class, as this could be needed
         self.sweep = run_sweep #True if the measurement is a sweep measurement, False if it is a constant voltage measurement
-        print('Measurement started')  #Debug message
-        print('Sweep:', sweep)  #Debug message
+
     def run(self): 
         #Main function that runs the measurement
         #This function is called when the thread is started
@@ -74,7 +73,8 @@ class MeasurementThread(QThread):
                 data = self.read_data()
                 self.send_data(data)
                 time.sleep(self.time_between_measurements)
-        self.abort_measurement()
+        if self.running:
+            self.abort_measurement()
 
     def run_constant(self):
         #Function that is called when the measurement is a constant voltage measurement
