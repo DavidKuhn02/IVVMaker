@@ -8,9 +8,9 @@ from Functionality import Functionality, Device_Handler, Sweep
 import os 
 
 class Ui_MainWindow(QWidget):
-    def __init__(self):
+    def __init__(self, rm):
         super().__init__()
-        self.rm = visa.ResourceManager('@py') # Set up the resource manager
+        self.rm = rm
         self.device_handler = Device_Handler(self.rm) # Initialize the device handler
         self.sweep_creator = Sweep()
         self.logic = Functionality(self)
