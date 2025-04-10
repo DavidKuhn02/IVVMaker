@@ -62,21 +62,12 @@ The parameters are:
     - __File Name__: The name of the file to save the measurement to. You can select the path for your data individually, the default path is IVVMaker/data/
     - __File Format__: The format of the file to save the measurement to. The default format is csv, with ' ' as delimiter. 
 
-4. During the measurement, the recorded data will be shown in the plot. The plot will be updated in real time. 
-
-    If you do a voltage sweep, the plot will show the current as a function of the voltage. 
-
-    If you do a constant voltage measurement, the plot will show the current as a function of time. 
-    
-    You can set custom limits for the plot to be able to zoom in on the data.
-    
-     You are also able to load the data from a previous measurement. Please note that only the data of the first connected SMU is plotted for now. The data of the other devices is saved in the file, but not plotted in the live view. This feature is planned for future versions.
+4. During the measurement, the recorded data will be shown in the plot. The plot will be updated in real time. If you do a voltage sweep, the plot will show the current as a function of the voltage. If you do a constant voltage measurement, the plot will show the current as a function of time. You can set custom limits for the plot to be able to zoom in on the data. You are also able to load the data from a previous measurement. Please note that only the data of the first connected SMU is plotted in the live view for now. The data of the other devices is saved in the file, but not plotted in the live view. This could be added in a future version. If you load a constant voltage measurement, note that the time between measurements is not saved in the file. This means that the time axis could be wrong, as it uses the current value of the time between measurements. This can also be fixed in the furture. 
 
 5. After the measurement is finished, the data will be saved to the file you specified. The data will be saved in the format you specified. The default format is csv, with ' ' as delimiter. The data will be saved in the following format:
-    - Column 1: Voltage of SMU0
-    - Column 2: Current of SMU0
-
-    If more decvices are connected, the next columns will be the data of additional SMUs, after that possible voltage meters and resistance meters will be saved. At the end the voltage and currents of the low voltage power supplies will be saved. 
+- Column 1: Voltage of SMU0
+- Column 2: Current of SMU0
+If more decvices are connected, the next columns will be the data of additional SMUs, after that possible voltage meters and resistance meters will be saved. At the end the voltage and currents of the low voltage power supplies will be saved. 
 
     The data will have two lines of header, the first one being either the number of steps taken in the sweep (for sweep measurements) or the time between measurements (for constant voltage measurements). This is done to simplify the analysis and not strictly needed. Be aware that while loading data in the plot, the first two lines of the data fil will always be skipped, as the header is expected there.
 
