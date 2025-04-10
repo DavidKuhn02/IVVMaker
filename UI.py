@@ -5,6 +5,7 @@ import pyvisa as visa
 import Devices
 import Plotting
 from Functionality import Functionality, Device_Handler, Sweep
+import os 
 
 class Ui_MainWindow(QWidget):
     def __init__(self):
@@ -165,7 +166,7 @@ class Ui_MainWindow(QWidget):
 
         self.folder_path = QLineEdit()    #Folder path for the data
         self.measurement_settings_layout.addWidget(self.folder_path, 14, 0)
-        self.folder_path.setText('IVVMaker/data')
+        self.folder_path.setText(os.path.join(os.getcwd(), 'data')) #Default path is the current working directory /data
 
         self.search_folder_path = QPushButton('...')   #Button to select the folder path
         self.search_folder_path.clicked.connect(self.logic.select_folder)
@@ -179,6 +180,10 @@ class Ui_MainWindow(QWidget):
         self.filename_suffix.addItems(['.csv', '.dat', '.txt'])
         self.filename_suffix.setCurrentIndex(0)
         self.measurement_settings_layout.addWidget(self.filename_suffix, 15, 1)
+
+        self.switch_darkmode = QPushButton('Switch darkmode')
+        self.switch_darkmode.clicked.connect(self.logic.switch_darkmode)
+        self.measurement_settings_layout.addWidget(self.switch_darkmode, 16, 0)
 
         self.measurement_settings_box.setLayout(self.measurement_settings_layout)  #Add the layout to the group box
         self.layout.addWidget(self.measurement_settings_box, 3, 0, 3, 1)
@@ -244,6 +249,15 @@ class Ui_MainWindow(QWidget):
 
         self.canvas_settings_layout.addWidget(line, 3, 0, 1, 5)
         self.canvas_settings_layout.addWidget(QLabel('Add a previous measurement to the plot'), 4, 0)   #Title for the option to plot old measurements 
+
+        self.canvas_keep_measurement_widget = QWidget()
+        self.canvas_keep_measurement_layout = QGridLayout()
+        self.canvas_keep_measurement = QCheckBox()   #CheckBox to keep the current measurement
+        self.canvas_keep_measurement_layout.addWidget(self.canvas_keep_measurement, 0, 1)
+        self.canvas_keep_measurement_widget.setLayout(self.canvas_keep_measurement_layout)
+        self.canvas_keep_measurement_layout.addWidget(QLabel('Keep the current measurement'), 0, 0)
+
+        self.canvas_settings_layout.addWidget(self.canvas_keep_measurement_widget, 4, 5)
         
         self.select_canvas_file = QLineEdit()     #Path to the file to be plotted
         self.select_canvas_file.setPlaceholderText('Select file')

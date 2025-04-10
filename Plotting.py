@@ -19,16 +19,18 @@ class PlotCanvas(FigureCanvas):
         self.live_ydata = []  #Array of the live y data (always given by SMU0)
         self.old_xdata = []   #Arrays of old data (either from file or from prev measurement)
         self.old_ydata = []   #Arrays of arrays 
-        self.labels = []      #Array of lables of old data 
+        self.labels = []      #Array of lables of old data
+        self.old_time_between_steps = [] #Time between steps of the old data 
         self.start_plot() #Start the plot with the default settings
 
     def start_plot(self):
-        self.clear_data()
+        self.clear_data() #Clear the live data
+        self.clear_plot() #Clear the plot
         self.update_plot()
-        self.ax.set_xlabel('Voltage [V]')
-        self.ax.set_ylabel('Current [uA]')
-        self.ax.set_title('Live IV data')
-        self.ax.grid(True)
+
+    def restart_plot(self):
+        self.clear_data() 
+        self.update_plot()
 
     def update_plot(self, new_x = None , new_y = None, time_between_measurements = 1):
         #Update the plot with new data, 
@@ -67,7 +69,7 @@ class PlotCanvas(FigureCanvas):
         for i in range(len(self.old_xdata)):
             if self.labels[i] in labels:
                 continue
-            self.ax.plot(np.arange(len(self.old_ydata[i]))*time_between_points, np.array(self.old_ydata[i])*1e6, label = self.labels[i], linestyle = 'none', marker = '.') #Plot the old data, which is not already plotted
+            self.ax.plot(np.arange(len(self.old_ydata[i]))*self.old_time_between_steps[i], np.array(self.old_ydata[i])*1e6, label = self.labels[i], linestyle = 'none', marker = '.') #Plot the old data, which is not already plotted
         self.ax.set_xlabel('Time [s]') #Change the x axis label to time
         self.ax.set_ylabel('Current [uA]')
         self.ax.set_title('Live It data')
@@ -91,7 +93,7 @@ class PlotCanvas(FigureCanvas):
         self.old_ydata = []
         self.labels = []
         self.ax.grid(True)
-        self.draw()
+        self.draw(),
 
     def clear_data(self):
         #Clear the live data for multiple following measurements
@@ -104,7 +106,11 @@ class PlotCanvas(FigureCanvas):
         if file in self.labels:
             return
         try:
+            type, time_between_steps = np.loadtxt(file, max_rows = 1, dtype = str, usecols = [0, 1], delimiter=' ') #Load the first two columns of the file 
             x, y = np.loadtxt(file, skiprows = 2, unpack = True, usecols = [0, 1])
+            print(type, time_between_steps)
+            if type == 'Time_between_points:':
+                self.old_time_between_steps.append(float(time_between_steps))
         except FileNotFoundError:
             print(file, ' not found')
 
@@ -112,7 +118,19 @@ class PlotCanvas(FigureCanvas):
         self.old_ydata.append(y)
         self.labels.append(file)
         self.update_plot()
- 
+    
+    def keep_data(self, label, time_between_step = 0):
+        #Keep the data from the last measurement
+        #This function is called when the measurement is stopped
+        if len(self.live_xdata) == 0:
+            return
+        self.old_xdata.append(self.live_xdata)
+        self.old_ydata.append(self.live_ydata)
+        self.labels.append(label)
+        self.old_time_between_steps.append(time_between_step)
+        self.update_plot()
+        self.clear_data()
+
     def set_custom_limits(self):
         #Set cutom limits for the plot
         #The limits are set by the user in the GUI

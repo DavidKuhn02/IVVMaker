@@ -6,10 +6,22 @@ import MeasurementThread
 import Devices
 import numpy as np
 import os
+from datetime import datetime 
+import qdarkstyle
 
 class Functionality:
     def __init__(self, ui):
         self.ui = ui
+        self.darkmode = False
+
+    def switch_darkmode(self):
+        app = QApplication.instance()
+        self.darkmode = not self.darkmode
+        if self.darkmode:
+            app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+        else:
+            app.setStyleSheet("")
+
 
     def refresh_devices(self):
         #This function refreshes the list of available devices and adds them to the device handler
@@ -32,29 +44,29 @@ class Functionality:
             self.ui.device_handler.device_candidates.remove(candidate) #Remove the selected device from the list of candidates
             self.ui.device_handler.used_ids.append(candidate[1]) #Add the selected device to the list of used ids to not be able to select it again
             if 'Keithley K2200 SMU' in candidate[2]: # Check the type of the device and create the respective object 
-                device = Devices.K2200(candidate[0], self.ui.rm)
+                device = Devices.K2200(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
-                self.K2200_warning() #Warn the user that the K2200 is not able to apply negative voltages
+                self.K2200_warning()
             elif 'Keithley K2470 SMU' in candidate[2]:
-                device = Devices.K2400(candidate[0], self.ui.rm)
+                device = Devices.K2400(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
             elif 'Keithley K2611 SMU' in candidate[2]:
-                device = Devices.K2600(candidate[0], self.ui.rm)
+                device = Devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
             elif 'Keithley K2000 Voltmeter' in candidate[2]:
-                device = Devices.K2000(candidate[0], self.ui.rm)
+                device = Devices.K2000(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.voltmeter_devices.append(device)
             elif 'Rhode&Schwarz NGE103B' in candidate[2]:
-                device = Devices.LowVoltagePowerSupplies(candidate[0], self.ui.rm)
+                device = Devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.lowV_devices.append(device)
             elif 'HAMEG HMP4040' in candidate[2]:
-                device = Devices.LowVoltagePowerSupplies(candidate[0], self.ui.rm)
+                device = Devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.lowV_devices.append(device)
             elif 'Dummy' in candidate[2]: #For testing purposes 
-                device = Devices.Dummy_Device(candidate[0], self.ui.rm)
+                device = Devices.Dummy_Device(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
             else:
-                print('Device not supported') #If the IDN of the device is not recognized as a supported decvice, print a message
-                return  
+                print('Device not supported')
+                return 
             widget = self.create_device_widget(candidate, device) #create the widget for the device
             self.ui.device_widgets.append(widget)
             self.ui.device_scrollLayout.addWidget(widget) # Add the device to the scroll area
@@ -68,31 +80,29 @@ class Functionality:
             self.ui.device_handler.device_candidates.remove(candidate)
             self.ui.device_handler.used_ids.append(candidate[1])
             if 'Keithley K2200 SMU' in candidate[2]: # Check the type of the device and create the respective object 
-                device = Devices.K2200(candidate[0], self.ui.rm)
+                device = Devices.K2200(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
                 self.K2200_warning()
             elif 'Keithley K2470 SMU' in candidate[2]:
-                device = Devices.K2400(candidate[0], self.ui.rm)
+                device = Devices.K2400(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
             elif 'Keithley K2611 SMU' in candidate[2]:
-                device = Devices.K2600(candidate[0], self.ui.rm)
+                device = Devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
             elif 'Keithley K2000 Voltmeter' in candidate[2]:
-                device = Devices.K2000(candidate[0], self.ui.rm)
+                device = Devices.K2000(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.voltmeter_devices.append(device)
             elif 'Rhode&Schwarz NGE103B' in candidate[2]:
-                device = Devices.LowVoltagePowerSupplies(candidate[0], self.ui.rm)
+                device = Devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.lowV_devices.append(device)
             elif 'HAMEG HMP4040' in candidate[2]:
-                device = Devices.LowVoltagePowerSupplies(candidate[0], self.ui.rm)
+                device = Devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.lowV_devices.append(device)
             elif 'Dummy' in candidate[2]: #For testing purposes 
-                device = Devices.Dummy_Device(candidate[0], self.ui.rm)
-            elif 'Dummy' in candidate[2]:
-                device = Devices.Dummy_Device(candidate[0], self.ui.rm)
+                device = Devices.Dummy_Device(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
             else:
                 print('Device not supported')
-                return  
+                return 
             widget = self.create_device_widget(candidate, device)
             self.ui.device_widgets.append(widget)
             self.ui.device_scrollLayout.addWidget(widget) # Add the device to the scroll area
@@ -200,20 +210,8 @@ class Functionality:
         self.ui.use_custom_sweep_checkBox.setEnabled(not self.fixed_voltage)
         self.ui.fixed_voltage.setEnabled(self.fixed_voltage)
         self.ui.canvas.constant_voltage = self.ui.fixed_voltage_checkBox.isChecked()
-        self.ui.canvas.clear_plot()
-        self.ui.canvas.update_plot()
-        if self.fixed_voltage:
-            self.ui.canvas_xlimits_label.setText('Time limits')
-            self.ui.canvas_lower_x_limit.setSuffix(' s')
-            self.ui.canvas_upper_x_limit.setSuffix(' s')
-            self.ui.canvas_lower_x_limit.setValue(0)
-            self.ui.canvas_upper_x_limit.setValue(self.ui.time_between_measurements.value()*100)
-        else:
-            self.ui.canvas_xlimits_label.setText('Voltage limits')
-            self.ui.canvas_lower_x_limit.setSuffix(' V')
-            self.ui.canvas_upper_x_limit.setSuffix(' V')
-            self.ui.canvas_lower_x_limit.setValue(self.ui.startV.value())
-            self.ui.canvas_upper_x_limit.setValue(self.ui.stopV.value())
+        self.ui.canvas.start_plot() #Restart the plot with clearing the old data, as sweep and constant measurments cant be in the same plot for now
+        
             
     def enable_custom_sweep(self):
         #This function enables or disables the custom sweep mode 
@@ -316,22 +314,6 @@ class Functionality:
         #This function is responsible for actually starting the measurement
         #It takes care of the UI changes and starts the measurement thread
         #It also takes care of the data saving and the sweep creation
-        try:  #try to create the data saver object, if the file already exists, raise an error
-            self.data_saver = DataSaver(   #start the data save thread 
-                filepath = self.ui.folder_path.text(),
-                filename = self.ui.filename.text(),
-                ui = self.ui,
-                functionality = self)
-        except FileExistsError:
-            self.file_exists_error()
-            return
-        self.ui_changes_start()
-        if not self.safety_check(startV= self.ui.startV.value(), stopV=self.ui.stopV.value()): # Check if a positive voltage is gonna be applied, if yes ask user to proceed
-            self.abort_measurement('Safety Check failed, preventing chip damage')
-            return
-        if not self.ui.device_handler.smu_devices:   #abort measurement if no SMU connected
-            self.abort_measurement('No SMU connected')
-            return
         if self.ui.use_custom_sweep_checkBox.isChecked(): #if a custom sweep is selected, read the data from the file
             try:
                 sweep = self.ui.sweep_creator.read_sweep(self.ui.custom_sweep_file.text())
@@ -343,15 +325,37 @@ class Functionality:
                 return
 
         else: #Create sweep from the given params if no custom sweep is selected
-            if self.ui.startV.value() == self.ui.stopV.value():
-                self.abort_measurement('Start and stop voltage are the same')
+            try:
+                sweep = self.ui.sweep_creator.linear_sweep(
+                    start = self.ui.startV.value(), 
+                    stop = self.ui.stopV.value(), 
+                    steps = self.ui.stepV.value(), 
+                    number_of_measurements = self.ui.measurements_per_step.value())
+            except Exception as e: 
+                self.abort_measurement('Error creating sweep. Please check your sweep parameters and try again. ' + str(e))
                 return
-            sweep = self.ui.sweep_creator.linear_sweep(
-                start = self.ui.startV.value(), 
-                stop = self.ui.stopV.value(), 
-                steps = self.ui.stepV.value(), 
-                number_of_measurements = self.ui.measurements_per_step.value())
-            
+        
+        
+        try:  #try to create the data saver object, if the file already exists, raise an error
+            self.data_saver = DataSaver(   #start the data save thread 
+                filepath = self.ui.folder_path.text(),
+                filename = self.ui.filename.text(),
+                ui = self.ui,
+                functionality = self,
+                sweep = sweep)
+        except FileExistsError:
+            self.file_exists_error()
+            return
+        self.ui_changes_start()
+        if not self.safety_check(startV= self.ui.startV.value(), stopV=self.ui.stopV.value()): # Check if a positive voltage is gonna be applied, if yes ask user to proceed
+            self.abort_measurement('Safety Check failed, preventing chip damage')
+            return
+        if not self.ui.device_handler.smu_devices:   #abort measurement if no SMU connected
+            self.abort_measurement('No SMU connected')
+            return
+        if not self.test_communication(): #Test the communication with the devices, if it fails, abort the measurement
+            return
+
         self.measurement_thread = MeasurementThread.MeasurementThread( #start the measurement thread with the given params
             limit_I = self.ui.limitI.value()*1e-6, 
             sweep = sweep,
@@ -361,6 +365,10 @@ class Functionality:
             run_sweep = not self.ui.fixed_voltage_checkBox.isChecked(),
             device_handler = self.ui.device_handler,
             functionallity = self)
+        if self.ui.canvas_keep_measurement.isChecked():
+            self.ui.canvas.keep_data(self.data_saver.filepath, self.ui.time_between_measurements.value())
+        self.ui.canvas.restart_plot()
+        self.ui.canvas.update_plot()
         self.measurement_thread.start() #start the measurement
         self.measurement_thread.data_signal.connect(self.receive_data)  #Handles the data signal from the measurement thread
         self.measurement_thread.finished_signal.connect(self.finish_measurement) # Handles the finished signal from the measurement thread
@@ -385,6 +393,34 @@ class Functionality:
         else:
             return True
 
+    def test_communication(self): #This function tests the communication with the connected devices by sending a *IDN? command and checking if the response is valid. If any of the devices fail, it will disconnect them and give a warning
+        for device in self.ui.device_handler.smu_devices:
+            try:
+                device.return_id()
+            except:
+                self.abort_measurement(f'Communication with {device.return_assigned_id()} failed. Please reconnect this device and try again.')
+                return
+        for device in self.ui.device_handler.voltmeter_devices:
+            try:
+                device.return_id()
+            except:
+                self.abort_measurement(f'Communication with {device.return_assigned_id()} failed. Please reconnect this device and try again.')
+                return
+        for device in self.ui.device_handler.resistancemeter_devices:
+            try:
+                device.return_id()
+            except:
+                self.abort_measurement(f'Communication with {device.return_assigned_id()} failed. Please reconnect this device and try again.')
+                return
+        for device in self.ui.device_handler.lowV_devices:
+            try:
+                device.return_id()
+            except:
+                self.abort_measurement(f'Communication with {device.return_assigned_id()} failed. Please reconnect this device and try again.')
+                return
+#        print('All devices are communicating correctly')
+        return True
+
     def abort_measurement(self, reason: str): #This function aborts the measurement and shows a warning message for various cases
         self.ui_changes_stop()
         try:
@@ -397,6 +433,7 @@ class Functionality:
         self.ui_changes_stop()
         self.data_saver.close()
         print('Measurement finished and data saved to ' + self.data_saver.filepath)
+        
         
 class Device_Handler:   #Class that handles the devices and their IDs
     def __init__(self, rm):
@@ -466,6 +503,25 @@ class Sweep: #class that can create voltage sweeps, for now only linear sweeps a
         pass
     
     def linear_sweep(self, start, stop, steps, number_of_measurements): 
+        #This function creates a linear sweep from start to stop with the given number of steps
+        if start == stop:
+            raise ValueError('Start and stop voltage are the same, no sweep possible')
+        if start > stop:
+            if steps > 0:
+                raise ValueError('Steps must be negative if start is greater than stop')
+            if abs(stop-start) < abs(steps):
+                raise ValueError('Steps are too big for the given range')
+        else:
+            if steps < 0:
+                raise ValueError('Steps must be positive if start is less than stop')
+            if abs(stop-start) < abs(steps):
+                raise ValueError('Steps are too big for the given range')
+        if steps == 0:
+            raise ValueError('Steps must not be zero')
+        if number_of_measurements <= 0:
+            raise ValueError('Number of measurements must be greater than 0')
+        
+
         voltages = np.arange(start, stop+steps, steps)
         n = np.ones(len(voltages))*number_of_measurements
         return np.column_stack([voltages, n])
@@ -476,15 +532,17 @@ class Sweep: #class that can create voltage sweeps, for now only linear sweeps a
 class DataSaver():
     #This class is responsible for saving the data to a file
     #It creates the file and writes the data to it
-    def __init__(self, filepath, filename, ui, functionality):
+    def __init__(self, filepath, filename, ui, functionality, sweep):
         self.functionality = functionality
         self.ui = ui
+        self.sweep = sweep
         self.create_file(filepath, filename)
         
     def create_file(self, filepath, filename):  
         #This function creates the file and writes the header to it
-        working_directory = os.getcwd()
-        self.filepath = os.path.join(working_directory, filepath, filename + self.ui.filename_suffix.currentText())
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.filepath = os.path.join(filepath, filename + '_' + timestamp + self.ui.filename_suffix.currentText())
+
         try:
             self.file = open(self.filepath, 'x', buffering=1)
             self.write_header()
@@ -497,6 +555,11 @@ class DataSaver():
         #It contains the names of the devices and their respective channels
         #The header is written to the file
         self.header = [] 
+        if self.ui.fixed_voltage_checkBox.isChecked():
+            self.constant_header(self.ui.time_between_measurements.value())
+        else:
+            self.sweep_header(len(self.sweep[0]))
+
         for i in range(len(self.ui.device_handler.smu_devices)):
             self.header.append(f'Voltage_SMU_{i}[V]')
             self.header.append(f'Current_SMU_{i}[A]')
@@ -523,11 +586,11 @@ class DataSaver():
 
     def sweep_header(self, num_of_steps):
         #This function writes the header for the sweep data
-        self.file.write('Steps: {} \n'.format(num_of_steps))
+        self.file.write('Steps: {}\n'.format(num_of_steps))
     
     def constant_header(self, time_between_points):
         #This function writes the header for the constant voltage data
-        self.file.write('Time between points: {} \n'.format(time_between_points))
+        self.file.write('Time_between_points: {}\n'.format(time_between_points))
 
     def close(self):
         #This function closes the file
