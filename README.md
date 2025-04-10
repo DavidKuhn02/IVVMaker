@@ -33,8 +33,7 @@ self.rm = pyvisa.ResourceManager('@py') # for the pure python backend
 self.rm = pyvisa.ResourceManager('@ni') # for the NI-VISA backend
 ```
   If you use the python backend, be sure you install `pyusb` and `pyserial` to be able to communiate with the devices over USB and serial.
-
-
+  
 For more information on how to install the backends, please refer to the [pyvisa documentation](https://pyvisa.readthedocs.io/en/).
 
 ## Usage
@@ -56,7 +55,7 @@ The parameters are:
     - __Measurements per step__: The number of measurements to take at each step. This is only used for a voltage sweep. 
     - __Current Limit__: The current limit for the measurement. This is important to set appropiate for the DUT to avoid damage.
     - __Constant Voltage__: The constant voltage to apply to the DUT. This is only used for a constant voltage measurement.
-    - __Custom Sweep__: Select custom sweep file for your measurement. This file should be a csv file with the following format:
+    - __Custom Sweep__: Select custom sweep file for your measurement. This file should be a csv file with the following format (see `custom_sweep_example.csv` for reference):
         - Column 1: Voltages for your sweep
         - Column 2: Number of measurements for each voltage 
     - __File Name__: The name of the file to save the measurement to. You can select the path for your data individually, the default path is IVVMaker/data/
