@@ -11,12 +11,12 @@ This piece of software is intended to be used to measure IV characteristics of e
     - Low Voltage Power Supply (__HAMEG HMP4040__ series, __Rhode & Schwarz NGE100__ series) 
 
 ## File structure
-- main.py: Main file to start the application
-- Devices.py: File containing the classes for the devices. This is where you can add support for additional devices.
-- MeasurementThread.py: File containing the class for the measurement thread. This is where the actual measurement is done.
-- UI.py: File containing the class for the GUI. This is where the GUI is created. The logic behind the GUI is not handled in this file.
-- Functionallity.py: File containing the class for the functionality of the application. This is where the logic behind the GUI is handled. Also the data save class and the devices are handled here.
-- Plotting.py: File containing the class for the plotting. This is where the plotting of the live data is handled.
+- `main.py` : Main file to start the application
+- `Devices.py`: File containing the classes for the devices. This is where you can add support for additional devices.
+- `MeasurementThread.py`: File containing the class for the measurement thread. This is where the actual measurement is done.
+- `UI.py`: File containing the class for the GUI. This is where the GUI is created. The logic behind the GUI is not handled in this file.
+- `Functionallity.py`: File containing the class for the functionality of the application. This is where the logic behind the GUI is handled. Also the data save class and the devices are handled here.
+- `Plotting.py`: File containing the class for the plotting. This is where the plotting of the live data is handled.
 ## Installation
 1. Clone the repository
 ```bash 
