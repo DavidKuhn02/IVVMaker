@@ -28,9 +28,9 @@ pip install -r requirements.txt
 ```
 3. Decide which backend for visa you want to use. The default is pyvisa-py, which is a pure python implementation of the NI-VISA standard. If you want to use the native backend, you need to install pyvisa and the appropriate backend for your operating system. You will also have to change the definition of the `ResourceManager` in the `Main.py` file:
 ```python 
-self.rm = pyvisa.ResourceManager('@py') # for the pure python backend
+ResourceManager = pyvisa.ResourceManager('@py') # for the pure python backend
 
-self.rm = pyvisa.ResourceManager('@ni') # for the NI-VISA backend
+ResourceManager = pyvisa.ResourceManager('@ni') # for the NI-VISA backend
 ```
   If you use the python backend, be sure you install `pyusb` and `pyserial` to be able to communiate with the devices over USB and serial.
   
