@@ -1,11 +1,17 @@
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QLabel, QMessageBox, QLineEdit, QComboBox, QScrollArea, QFrame, QVBoxLayout, QGroupBox, QSpinBox, QDoubleSpinBox, QCheckBox, QRadioButton
+from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QLabel, QMessageBox, QLineEdit, QComboBox, QScrollArea, QFrame, QVBoxLayout, QGroupBox, QSpinBox, QDoubleSpinBox, QCheckBox, QRadioButton, QSizePolicy
 from PyQt5.QtCore import QThread, pyqtSignal
 import pyvisa as visa
-import Devices
-import Plotting
-from Functionality import Functionality, Device_Handler, Sweep
+import devices
+import plotting
+from logic import Functionality, Device_Handler, Sweep
+from config_manager import config_manager
 import os 
+
+data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data') #Path to the data folder
+if not os.path.exists(data_path): #Create the data folder if it does not exist
+    os.makedirs(data_path)
+
 
 class Ui_MainWindow(QWidget):
     def __init__(self, rm):
@@ -15,6 +21,7 @@ class Ui_MainWindow(QWidget):
         self.sweep_creator = Sweep()
         self.logic = Functionality(self)
         self.setup_ui()
+        self.logic.openEvent()
 
     def setup_ui(self):
        
@@ -78,17 +85,15 @@ class Ui_MainWindow(QWidget):
         self.measurement_settings_layout.addWidget(QLabel('Start Voltage [V]'), 0, 0)  #Start Voltage SpinBox and Label
         self.startV = QDoubleSpinBox()
         self.startV.setRange(-1100, 1100)
-        self.startV.setDecimals(0)
+        self.startV.setDecimals(2)
         self.startV.setSuffix(' V')
-        self.startV.setValue(0) 
         self.measurement_settings_layout.addWidget(self.startV, 0, 1)
 
         self.measurement_settings_layout.addWidget(QLabel('Stop Voltage [V]'), 1, 0)  #End Voltage SpinBox and Label
         self.stopV = QDoubleSpinBox()
         self.stopV.setRange(-1100, 1100)
-        self.stopV.setDecimals(0)
+        self.stopV.setDecimals(2)
         self.stopV.setSuffix(' V')
-        self.stopV.setValue(-160)
         self.measurement_settings_layout.addWidget(self.stopV, 1, 1)
 
         self.measurement_settings_layout.addWidget(QLabel('Step Voltage [V]'), 2, 0)  #Step Voltage SpinBox and Label
@@ -96,7 +101,6 @@ class Ui_MainWindow(QWidget):
         self.stepV.setRange(-1100, 1100)
         self.stepV.setDecimals(2)
         self.stepV.setSuffix(' V')
-        self.stepV.setValue(-1)
         self.measurement_settings_layout.addWidget(self.stepV, 2, 1)
 
         self.measurement_settings_layout.addWidget(QLabel('Time between \nsteps [s]'), 3, 0)  #Delay SpinBox and Label
@@ -104,7 +108,6 @@ class Ui_MainWindow(QWidget):
         self.time_between_steps.setRange(0, 1000)
         self.time_between_steps.setDecimals(2)
         self.time_between_steps.setSuffix(' s')
-        self.time_between_steps.setValue(.5)
         self.measurement_settings_layout.addWidget(self.time_between_steps, 3, 1)
 
         self.measurement_settings_layout.addWidget(QLabel('Time between \nmeasurements [s]'), 4, 0)  #Delay SpinBox and Label
@@ -112,14 +115,12 @@ class Ui_MainWindow(QWidget):
         self.time_between_measurements.setRange(0, 1000)
         self.time_between_measurements.setDecimals(2)  
         self.time_between_measurements.setSuffix(' s')
-        self.time_between_measurements.setValue(.4)
         self.measurement_settings_layout.addWidget(self.time_between_measurements, 4, 1)
 
         self.measurements_per_step_label = QLabel('Measurements \nper step')  #Delay SpinBox and Label
         self.measurement_settings_layout.addWidget(self.measurements_per_step_label, 5, 0)  
         self.measurements_per_step = QSpinBox()
         self.measurements_per_step.setRange(1, 1000)
-        self.measurements_per_step.setValue(5)
         self.measurement_settings_layout.addWidget(self.measurements_per_step, 5, 1)
 
         self.measurement_settings_layout.addWidget(QLabel('Limit Current [uA]'), 6, 0)  #Limit Current SpinBox and Label
@@ -127,7 +128,6 @@ class Ui_MainWindow(QWidget):
         self.limitI.setRange(0, 1e6)
         self.limitI.setDecimals(2)
         self.limitI.setSuffix(' uA')
-        self.limitI.setValue(10)
         self.measurement_settings_layout.addWidget(self.limitI, 6, 1)
 
         self.measurement_settings_layout.addWidget(QLabel('Use constant voltage'), 7, 0) #Constant Voltage CheckBox and Label
@@ -140,7 +140,6 @@ class Ui_MainWindow(QWidget):
         self.fixed_voltage.setRange(-1100, 1100)
         self.fixed_voltage.setDecimals(2)
         self.fixed_voltage.setSuffix(' V')
-        self.fixed_voltage.setValue(0)
         self.measurement_settings_layout.addWidget(self.fixed_voltage, 8, 1)
         self.fixed_voltage.setEnabled(False)
 
@@ -166,7 +165,7 @@ class Ui_MainWindow(QWidget):
 
         self.folder_path = QLineEdit()    #Folder path for the data
         self.measurement_settings_layout.addWidget(self.folder_path, 14, 0)
-        self.folder_path.setText(os.path.join(os.getcwd(), 'data')) #Default path is the current working directory /data
+        self.folder_path.setText(data_path) #Default path is the current working directory /data
 
         self.search_folder_path = QPushButton('...')   #Button to select the folder path
         self.search_folder_path.clicked.connect(self.logic.select_folder)
@@ -188,7 +187,7 @@ class Ui_MainWindow(QWidget):
         self.measurement_settings_box.setLayout(self.measurement_settings_layout)  #Add the layout to the group box
         self.layout.addWidget(self.measurement_settings_box, 3, 0, 3, 1)
         
-        self.canvas = Plotting.PlotCanvas(self)     #Initialize the plot canvas
+        self.canvas = plotting.PlotCanvas(self)     #Initialize the plot canvas
         self.layout.addWidget(self.canvas, 0, 1, 5, 3)
 
         self.canvas_settings = QGroupBox('Plot settings')    #Create a group box for the plot settings
@@ -275,12 +274,40 @@ class Ui_MainWindow(QWidget):
 
         self.start_button = QPushButton('Start Measurement') #Button to start the measurement 
         self.start_button.clicked.connect(self.logic.start_measurement)
-        self.layout.addWidget(self.start_button, 6, 0, 1, 3)   
+        self.layout.addWidget(self.start_button, 6, 1, 2, 2)   
+        self.start_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        self.start_button.setStyleSheet("""
+                                            QPushButton {
+                                                font-weight: bold;
+                                                font-size: 18px;
+                                                border: 2px solid green;
+                                                border-radius: 5px;
+                                                padding: 5px;
+                                            }
+                                        """)
 
         self.abort_button = QPushButton('Abort Measurment') #Button to abort/stop the measurement
         self.abort_button.clicked.connect(lambda: self.logic.abort_measurement('Manually aborted'))
-        self.layout.addWidget(self.abort_button, 6, 3, 1, 1)
+        self.layout.addWidget(self.abort_button, 6, 3, 2, 1)
         self.abort_button.setEnabled(False)
+        self.abort_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        self.abort_button.setStyleSheet("""
+                                            QPushButton {
+                                                font-weight: bold;
+                                                font-size: 18px;
+                                                border: 2px solid red;
+                                                border-radius: 5px;
+                                                padding: 5px;
+                                            }
+                                        """)
+
+        self.save_config_button = QPushButton('Save Config') #Button to save the config
+        self.save_config_button.clicked.connect(self.logic.save_config)
+        self.layout.addWidget(self.save_config_button, 6, 0, 1, 1)
+
+        self.load_config_button = QPushButton('Load Config') #Button to load the config
+        self.load_config_button.clicked.connect(self.logic.load_config)
+        self.layout.addWidget(self.load_config_button, 7, 0, 1, 1)
 
     def closeEvent(self, event): # Ask the user if they want to quit
         # If the user wants to quit, close all devices and quit the application
@@ -288,14 +315,7 @@ class Ui_MainWindow(QWidget):
         # This is a standard close event for PyQt5 applications
         reply = QMessageBox.question(self, 'Quit?', 'Are you sure you want to quit?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
+            self.logic.closeEvent()
             event.accept()
-            for device in self.device_handler.smu_devices:
-                device.close()
-            for device in self.device_handler.voltmeter_devices:
-                device.close()
-            for device in self.device_handler.resistancemeter_devices:
-                device.close()  
-            for device in self.device_handler.lowV_devices:
-                device.close()
         else:
             event.ignore()

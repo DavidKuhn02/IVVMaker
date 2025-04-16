@@ -146,13 +146,14 @@ class K2400:
         self.device = rm.open_resource(port)
         self.port = port
         self.assigned_id = id
-        self.device.reset()
-        self.device.clear_buffer()
+        self.device.write('LANG SCPI') # Sets the language to SCPI
+        self.reset()
+        self.clear_buffer()
         self.device.write(':SOUR:FUNC VOLT') # Sets Source to voltage mode (needed for IV Curves)
         self.device.write(':SOUR:VOLT 0') #Sets the output voltage to 0
 
     def reset(self):
-        self.device.write('RST*')
+        self.device.write('*RST')
 
     def clear_buffer(self):
         self.device.write('*CLS')
@@ -176,7 +177,7 @@ class K2400:
             self.device.write(':OUTP OFF')
 
     def set_limit(self, limitI):
-        self.device.write(f':SENS:CURR:PROT {str(limitI)}')
+        self.device.write(f':SOUR:VOLT:ILIM {str(limitI)}')
 
     def set_voltage(self, voltage):
         self.device.write(f':SOUR:VOLT {str(voltage)}')
