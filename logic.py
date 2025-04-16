@@ -2,17 +2,38 @@
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QLabel, QMessageBox, QLineEdit, QComboBox, QScrollArea, QFrame, QVBoxLayout, QGroupBox, QSpinBox, QDoubleSpinBox, QCheckBox, QRadioButton, QFileDialog
 from PyQt5.QtCore import QThread, pyqtSignal
-import MeasurementThread
-import Devices
+import measurement_thread
+import devices
+import data_handler
+import config_manager
 import numpy as np
 import os
 from datetime import datetime 
 import qdarkstyle
 
+
 class Functionality:
     def __init__(self, ui):
         self.ui = ui
         self.darkmode = False
+        self.config_manager = config_manager.config_manager(self.ui)
+
+    def openEvent(self):
+        print('Loading latest config')
+        config = self.config_manager.load_config(os.path.join(os.path.dirname(__file__), 'config', 'latest.json'))
+        self.config_manager.apply_config(config)
+
+    def closeEvent(self):
+        for device in self.ui.device_handler.smu_devices:
+            device.close()
+        for device in self.ui.device_handler.voltmeter_devices:
+            device.close()
+        for device in self.ui.device_handler.resistancemeter_devices:
+            device.close()  
+        for device in self.ui.device_handler.lowV_devices:
+            device.close()
+        config = self.config_manager.assemble_config()
+        self.config_manager.save_config(config, os.path.join(os.path.dirname(__file__), 'config', 'latest.json'))
 
     def switch_darkmode(self):
         app = QApplication.instance()
@@ -22,6 +43,12 @@ class Functionality:
         else:
             app.setStyleSheet("")
 
+    def update_darkmode(self):
+        app = QApplication.instance()
+        if self.darkmode:
+            app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+        else:
+            app.setStyleSheet("")
 
     def refresh_devices(self):
         #This function refreshes the list of available devices and adds them to the device handler
@@ -44,26 +71,26 @@ class Functionality:
             self.ui.device_handler.device_candidates.remove(candidate) #Remove the selected device from the list of candidates
             self.ui.device_handler.used_ids.append(candidate[1]) #Add the selected device to the list of used ids to not be able to select it again
             if 'Keithley K2200 SMU' in candidate[2]: # Check the type of the device and create the respective object 
-                device = Devices.K2200(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                device = devices.K2200(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
                 self.K2200_warning()
-            elif 'Keithley K2470 SMU' in candidate[2]:
-                device = Devices.K2400(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+            elif 'Keithley K2400 SMU' in candidate[2]:
+                device = devices.K2400(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
             elif 'Keithley K2611 SMU' in candidate[2]:
-                device = Devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                device = devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
             elif 'Keithley K2000 Voltmeter' in candidate[2]:
-                device = Devices.K2000(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                device = devices.K2000(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.voltmeter_devices.append(device)
             elif 'Rhode&Schwarz NGE103B' in candidate[2]:
-                device = Devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                device = devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.lowV_devices.append(device)
             elif 'HAMEG HMP4040' in candidate[2]:
-                device = Devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                device = devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.lowV_devices.append(device)
             elif 'Dummy' in candidate[2]: #For testing purposes 
-                device = Devices.Dummy_Device(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                device = devices.Dummy_Device(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
             else:
                 print('Device not supported')
                 return 
@@ -80,26 +107,26 @@ class Functionality:
             self.ui.device_handler.device_candidates.remove(candidate)
             self.ui.device_handler.used_ids.append(candidate[1])
             if 'Keithley K2200 SMU' in candidate[2]: # Check the type of the device and create the respective object 
-                device = Devices.K2200(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                device = devices.K2200(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
                 self.K2200_warning()
-            elif 'Keithley K2470 SMU' in candidate[2]:
-                device = Devices.K2400(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+            elif 'Keithley K2400 SMU' in candidate[2]:
+                device = devices.K2400(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
             elif 'Keithley K2611 SMU' in candidate[2]:
-                device = Devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                device = devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
             elif 'Keithley K2000 Voltmeter' in candidate[2]:
-                device = Devices.K2000(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                device = devices.K2000(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.voltmeter_devices.append(device)
             elif 'Rhode&Schwarz NGE103B' in candidate[2]:
-                device = Devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                device = devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.lowV_devices.append(device)
             elif 'HAMEG HMP4040' in candidate[2]:
-                device = Devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                device = devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.lowV_devices.append(device)
             elif 'Dummy' in candidate[2]: #For testing purposes 
-                device = Devices.Dummy_Device(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                device = devices.Dummy_Device(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
             else:
                 print('Device not supported')
                 return 
@@ -114,8 +141,12 @@ class Functionality:
         device_widget = QFrame()
         device_widget.setFrameShape(QFrame.Box)
         device_layout = QGridLayout()
-        device_widget.setLayout(device_layout)
-        device_layout.addWidget(QLabel(candidate[1]), 0, 0, 1, 2)
+        device_widget.setLayout(device_layout) # 
+        if 'Keithley K2611 SMU' in candidate[2] or 'Keithley K2200 SMU' in candidate[2] or 'Keithley K2400 SMU' in candidate[2]: 
+            device_layout.addWidget(QLabel(f'SMU {len(self.ui.device_handler.smu_devices)-1}: ' + candidate[1]) , 0, 0, 1, 2) #Add the naem from the savefile to the layout
+        else: 
+            device_layout.addWidget(QLabel(candidate[1]), 0, 0, 1, 2)  #Add the ID to the Layout
+    
         reset_button = QPushButton('Reset')
         reset_button.clicked.connect(lambda : self.reset_device(device))
         device_layout.addWidget(reset_button, 1, 0)
@@ -211,7 +242,6 @@ class Functionality:
         self.ui.fixed_voltage.setEnabled(self.fixed_voltage)
         self.ui.canvas.constant_voltage = self.ui.fixed_voltage_checkBox.isChecked()
         self.ui.canvas.start_plot() #Restart the plot with clearing the old data, as sweep and constant measurments cant be in the same plot for now
-        
             
     def enable_custom_sweep(self):
         #This function enables or disables the custom sweep mode 
@@ -289,6 +319,8 @@ class Functionality:
         self.ui.refresh_button.setEnabled(False)
         self.ui.add_device_button.setEnabled(False)
         self.ui.add_all_devices_button.setEnabled(False)
+        for widget in self.ui.device_widgets:
+            widget.setEnabled(False)
         
     def ui_changes_stop(self):
         #This function changes the UI when the measurement is stopped
@@ -309,6 +341,8 @@ class Functionality:
         self.ui.refresh_button.setEnabled(True)
         self.ui.add_device_button.setEnabled(True)
         self.ui.add_all_devices_button.setEnabled(True)
+        for widget in self.ui.device_widgets:
+            widget.setEnabled(True)
 
     def start_measurement(self):
         #This function is responsible for actually starting the measurement
@@ -337,7 +371,7 @@ class Functionality:
         
         
         try:  #try to create the data saver object, if the file already exists, raise an error
-            self.data_saver = DataSaver(   #start the data save thread 
+            self.data_saver = data_handler.DataSaver(   #start the data save thread 
                 filepath = self.ui.folder_path.text(),
                 filename = self.ui.filename.text(),
                 ui = self.ui,
@@ -356,7 +390,7 @@ class Functionality:
         if not self.test_communication(): #Test the communication with the devices, if it fails, abort the measurement
             return
 
-        self.measurement_thread = MeasurementThread.MeasurementThread( #start the measurement thread with the given params
+        self.measurement_thread = measurement_thread.MeasurementThread( #start the measurement thread with the given params
             limit_I = self.ui.limitI.value()*1e-6, 
             sweep = sweep,
             constant_voltage = self.ui.fixed_voltage.value(),
@@ -433,7 +467,31 @@ class Functionality:
         self.ui_changes_stop()
         self.data_saver.close()
         print('Measurement finished and data saved to ' + self.data_saver.filepath)
+    
+
+    def save_config(self):
+        #This function saves the current settings to a config file
+        filename, ok = QFileDialog.getSaveFileName(self.ui, 'Save Config', os.path.join(os.path.dirname(__file__), 'config'), 'Config Files (*.json)')
+        if not ok:
+            return
+        if not filename.endswith('.json'):
+            filename += '.json'
+        if os.path.exists(filename):
+            reply = QMessageBox.question(self.ui, 'Overwrite Config', 'The config file already exists. Do you want to overwrite it?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.No:
+                return
+        config = self.config_manager.assemble_config()
+        self.config_manager.save_config(config, filename)
         
+    def load_config(self):
+        #This function loads the config file and applies it to the UI
+        filename, ok = QFileDialog.getOpenFileName(self.ui, 'Load Config', os.path.join(os.path.dirname(__file__), 'config'), 'Config Files (*.json)')
+        if not ok:
+            return
+        config = self.config_manager.load_config(filename)
+        self.config_manager.apply_config(config)
+        self.ui.canvas.restart_plot()
+        self.ui.canvas.update_plot()
         
 class Device_Handler:   #Class that handles the devices and their IDs
     def __init__(self, rm):
@@ -455,7 +513,7 @@ class Device_Handler:   #Class that handles the devices and their IDs
             try:
                 device = self.rm.open_resource(port) # Try to open the port 
             except:
-                print('Could not open port', port) #Debug message
+#                print('Could not open port', port) #Debug message
                 continue                    
             #As some devices use different termination characters, we need to try different ones, if "\n" does not work we try "\r"
             device.write_termination = '\n'
@@ -464,6 +522,7 @@ class Device_Handler:   #Class that handles the devices and their IDs
             device.timeout = 500
             try:
                 id = device.query('*IDN?') # Query the identification string of the device
+                print(port, id)
             except:
                 device.write_termination = '\r' # Change the termination characters to "\r"
                 device.read_termination = '\r'
@@ -478,8 +537,8 @@ class Device_Handler:   #Class that handles the devices and their IDs
                 continue
             if 'Keithley' in id and '2200' in id:
                 self.device_candidates.append([port, id, 'Keithley K2200 SMU'])
-            elif 'Keithley' in id and '2470' in id:
-                self.device_candidates.append([port, id, 'Keithley K2470 SMU'])
+            elif 'Keithley' in id and ('2470' in id) or ('2450' in id):
+                self.device_candidates.append([port, id, 'Keithley K2400 SMU'])
             elif 'Keithley' in id and '2611' in id:
                 self.device_candidates.append([port, id, 'Keithley K2611 SMU'])
             elif 'KEITHLEY' in id and '2000'in id:
@@ -529,69 +588,4 @@ class Sweep: #class that can create voltage sweeps, for now only linear sweeps a
     def read_sweep(self, file):
         return np.loadtxt(file, delimiter = ' ', usecols=[0, 1]) #reads a csv file with the sweep data
     
-class DataSaver():
-    #This class is responsible for saving the data to a file
-    #It creates the file and writes the data to it
-    def __init__(self, filepath, filename, ui, functionality, sweep):
-        self.functionality = functionality
-        self.ui = ui
-        self.sweep = sweep
-        self.create_file(filepath, filename)
-        
-    def create_file(self, filepath, filename):  
-        #This function creates the file and writes the header to it
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.filepath = os.path.join(filepath, filename + '_' + timestamp + self.ui.filename_suffix.currentText())
 
-        try:
-            self.file = open(self.filepath, 'x', buffering=1)
-            self.write_header()
-        except FileExistsError:
-            raise FileExistsError
-            return
-    
-    def write_header(self):
-        #The header is created based on the devices that are connected
-        #It contains the names of the devices and their respective channels
-        #The header is written to the file
-        self.header = [] 
-        if self.ui.fixed_voltage_checkBox.isChecked():
-            self.constant_header(self.ui.time_between_measurements.value())
-        else:
-            self.sweep_header(len(self.sweep[0]))
-
-        for i in range(len(self.ui.device_handler.smu_devices)):
-            self.header.append(f'Voltage_SMU_{i}[V]')
-            self.header.append(f'Current_SMU_{i}[A]')
-        for i in range(len(self.ui.device_handler.voltmeter_devices)):
-            self.header.append(f'Voltage Voltmeter {i} [V]')
-        for i in range(len(self.ui.device_handler.resistancemeter_devices)):
-            self.header.append(f'Resistance_Resistancemeter_{i}[Ohm]')
-        for i in range(len(self.ui.device_handler.lowV_devices)):
-            num_channels = self.ui.device_handler.resistancemeter_devices[i].return_num_channels()
-            if num_channels == 3:
-                self.header.append(f'Voltage_lowV_{i}_Channel_1[V] Voltage_lowV_{i}_Channel_2[V] Voltage_lowV_{i}_Channel_3[V] Current_lowV_{i}_Channel_1[A] Current_lowV_{i}_Channel_2[A] Current_lowV_{i}_Channel_3[A]')
-            else:
-                self.header.append(f'Voltage_lowV_{i}_Channel_1[V] Voltage_lowV_{i}_Channel_2[V] Voltage_lowV_{i}_Channel_3[V] Voltage_lowV_{i}_Channel_4[V] Current_lowV_{i}_Channel_1[A] Current_lowV_{i}_Channel_2[A] Current_lowV_{i}_Channel_3[A] Current_lowV_{i}_Channel_4[A]')
-
-        self.file.write(' '.join(self.header)+ '\n') 
-
-    def write_data(self, data):
-        #This function writes the data to the file
-        data_string = ' '.join(map(str, data)) + '\n'
-        try:
-            self.file.write(data_string)
-        except:
-            print('Data could not be safed')
-
-    def sweep_header(self, num_of_steps):
-        #This function writes the header for the sweep data
-        self.file.write('Steps: {}\n'.format(num_of_steps))
-    
-    def constant_header(self, time_between_points):
-        #This function writes the header for the constant voltage data
-        self.file.write('Time_between_points: {}\n'.format(time_between_points))
-
-    def close(self):
-        #This function closes the file
-        self.file.close()

@@ -4,19 +4,22 @@ This piece of software is intended to be used to measure IV characteristics of e
 ## Feautures
 - GUI to set the parameters for the measurement and control the devices for the measurement
 - Real time plotting of the data during the measurement
+- Save and load configs to repeat measurements without a hassle
 - Currently implemented devices:
-    - SMU (__Keithley 2200__ series, __Keithley 2400__ series, __Keithley 2600__ series)
+    - SMU (__Keithley 2200__ series, __Keithley 2400__ [set to SCPI command language] series, __Keithley 2600__ series)
     - Voltage Meter (__Keithley 2000__ series)
     - Resistance Meter (__Keithley 2000__ series)
     - Low Voltage Power Supply (__HAMEG HMP4040__ series, __Rhode & Schwarz NGE100__ series) 
 
 ## File structure
 - `main.py` : Main file to start the application
-- `Devices.py`: File containing the classes for the devices. This is where you can add support for additional devices.
-- `MeasurementThread.py`: File containing the class for the measurement thread. This is where the actual measurement is done.
-- `UI.py`: File containing the class for the GUI. This is where the GUI is created. The logic behind the GUI is not handled in this file.
-- `Functionallity.py`: File containing the class for the functionality of the application. This is where the logic behind the GUI is handled. Also the data save class and the devices are handled here.
-- `Plotting.py`: File containing the class for the plotting. This is where the plotting of the live data is handled.
+- `devices.py`: File containing the classes for the devices. This is where you can add support for additional devices.
+- `measurement_thread.py`: File containing the class for the measurement thread. This is where the actual measurement is done.
+- `ui.py`: File containing the class for the GUI. This is where the GUI is created. The logic behind the GUI is not handled in this file.
+- `logic.py`: File containing the class for the functionality of the application. This is where the logic behind the GUI is handled.#
+- `data_handler.py`: File containing the class for the data handling. This is where the data saving is handled.
+- `plotting.py`: File containing the class for the plotting. This is where the plotting of the live data is handled.
+- `config_manager.py`: File containing the class to save and load configs for your measurement.
 ## Installation
 1. Clone the repository
 ```bash 
@@ -37,13 +40,18 @@ ResourceManager = pyvisa.ResourceManager('@ni') # for the NI-VISA backend
 For more information on how to install the backends, please refer to the [pyvisa documentation](https://pyvisa.readthedocs.io/en/).
 
 ## Usage
+### Performing measurements 
 1. Start the application
 ```bash
 python main.py
 ```
-2. Search for connected devices using the "Search Devices" button in the GUI. The devices should be listed in the "Select Device" menu. If you want to use a device, select it and click on the "Add selected Device" button. The device should now be connected and ready to use. If you know what you're doing you can use the "Search and add all connected Devices". This is only recommended if you are sure that you want to use all the devices connected to your computer.
-The device should now be listed in the "Connected Devices" menu. There you the option to remove the device from this list if you dont want to use it in your measurement. Additional you can reset the device and clear its buffer. For some devices additional options are available. For example you can choose if the device should measure a voltage or current.
-If you want to add support for additional devices, you can do this by creating a new class in the device file.
+2. Search for connected devices using the "Search Devices" button in the GUI. The devices should be listed in the "Select Device" menu. If you want to use a device, select it and click on the "Add selected Device" button. The device should now be connected and ready to use. 
+
+    If you know what you're doing you can use the "Search and add all connected Devices". This is only recommended if you are sure that you want to use all the devices connected to your computer.
+    
+    The device should now be listed in the "Connected Devices" menu. There you the option to remove the device from this list if you dont want to use it in your measurement. Additional you can reset the device and clear its buffer. For some devices additional options are available. For example you can choose if the device should measure a voltage or current.
+
+    If you want to add support for additional devices, you can do this by creating a new class in the device file and including them in the `logic.py` file in the `add_device` function. 
 
 3. Enter the parameters for the measurement. You can choose between a voltage sweep or a measurement with a constant applied voltage.
 The parameters are:
@@ -69,4 +77,5 @@ The parameters are:
 If more decvices are connected, the next columns will be the data of additional SMUs, after that possible voltage meters and resistance meters will be saved. At the end the voltage and currents of the low voltage power supplies will be saved. 
 
     The data will have two lines of header, the first one being either the number of steps taken in the sweep (for sweep measurements) or the time between measurements (for constant voltage measurements). This is done to simplify the analysis and not strictly needed. Be aware that while loading data in the plot, the first two lines of the data fil will always be skipped, as the header is expected there.
-
+### Saving and loading configs
+If you close te program the current settings are saved to the at `latest.json` config file and loaded again if you start the application the next time. Additional you have the option to save customized configs using the respective button. These manually saved configs can also be loaded again. 

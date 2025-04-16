@@ -1,0 +1,15 @@
+{
+    "sweep": false,
+    "start_voltage": 0.0,
+    "stop_voltage": 2.0,
+    "step_voltage": 1.0,
+    "time_between_steps": 0.5,
+    "time_between_measurements": 0.4,
+    "measurements_per_step": 5,
+    "limit_current": 100000.0,
+    "constant_voltage": 2.4,
+    "custom_sweep": false,
+    "custom_sweep_filepath": "",
+    "filename_suffix": 0,
+    "darkmode": true
+}
