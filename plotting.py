@@ -107,7 +107,7 @@ class PlotCanvas(FigureCanvas):
             return
         try:
             type, time_between_steps = np.loadtxt(file, max_rows = 1, dtype = str, usecols = [0, 1], delimiter=' ') #Load the first two columns of the file 
-            x, y = np.loadtxt(file, skiprows = 2, unpack = True, usecols = [0, 1])
+            x, y = np.loadtxt(file, skiprows = 3, unpack = True, usecols = [0, 1])
             print(type, time_between_steps)
             if type == 'Time_between_points:':
                 self.old_time_between_steps.append(float(time_between_steps))
