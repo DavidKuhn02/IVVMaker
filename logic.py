@@ -3,6 +3,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QLabel, QMessageBox, QLineEdit, QComboBox, QScrollArea, QFrame, QVBoxLayout, QGroupBox, QSpinBox, QDoubleSpinBox, QCheckBox, QRadioButton, QFileDialog
 from PyQt5.QtCore import QThread, pyqtSignal
 import measurement_thread
+import parameter_dialog
 import devices
 import data_handler
 import config_manager
@@ -166,15 +167,21 @@ class Functionality:
             device_layout.addWidget(takeV, 2, 0)
             device_layout.addWidget(takeR, 2, 1)  
         
-        if candidate[2] == 'Keithley K2611 SMU':  #For the K2611 SMU, add a checkbox to enable high capacitance mode, as this is a feature of the device 
-            enableHighC = QCheckBox()
-            enableHighCLabel = QLabel('Enable High Capacitance Mode')
-            enableHighC.clicked.connect(lambda : device.enable_highC(enableHighC.isChecked()))
-            device_layout.addWidget(enableHighC, 2, 1)
-            device_layout.addWidget(enableHighCLabel, 2, 0)
+        if candidate[2] == 'Keithley K2400 SMU':  # Add the pop up window to allow for advanced settings for the Keithley K2400 SMUs
+            advanced_settings = QPushButton('Advanced Settings')
+            device_settings = {}
+            advanced_settings.clicked.connect(lambda : self.open_parameter_dialog(device, candidate[1]))
+            device_layout.addWidget(advanced_settings, 2, 1, 1, 2)
         
         return device_widget
 
+    def open_parameter_dialog(self, device, id):
+        #This function opens the parameter dialog for the device
+        #It is used to set the parameters for the device, like voltage range, current range, etc.
+        self.parameter_dialog = parameter_dialog.ParameterDiaglog_K2400(device, id, self.ui.rm)
+        self.parameter_dialog.show()
+
+    
     def reset_device(self, device): 
         #Function for the device widget to reset the device
         try: 
@@ -537,7 +544,7 @@ class Device_Handler:   #Class that handles the devices and their IDs
                 continue
             if 'Keithley' in id and '2200' in id:
                 self.device_candidates.append([port, id, 'Keithley K2200 SMU'])
-            elif 'Keithley' in id and ('2470' in id) or ('2450' in id):
+            elif 'KEITHLEY' in id and ('2470' in id or '2450' in id):
                 self.device_candidates.append([port, id, 'Keithley K2400 SMU'])
             elif 'Keithley' in id and '2611' in id:
                 self.device_candidates.append([port, id, 'Keithley K2611 SMU'])
