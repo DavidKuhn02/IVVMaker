@@ -146,7 +146,7 @@ class K2400:
         self.device = rm.open_resource(port)
         self.port = port
         self.assigned_id = id
-        self.device.write('LANG SCPI') # Sets the language to SCPI
+        self.settings = {}
         self.reset()
         self.clear_buffer()
         self.device.write(':SOUR:FUNC VOLT') # Sets Source to voltage mode (needed for IV Curves)
@@ -156,7 +156,9 @@ class K2400:
         self.device.write('*RST')
 
     def clear_buffer(self):
-        self.device.write('*CLS')
+#        self.device.write('*CLS')
+        self.device.write('TRAC:CLE "defbuffer1"')
+        self.device.write('TRAC:CLE "defbuffer2"')
 
     def return_port(self):
         return self.port
@@ -169,6 +171,46 @@ class K2400:
     
     def close(self):
         self.device.close()
+
+    def enable_highC(self, highC):
+        if highC:
+            self.device.write(':SOUR:VOLT:HIGH:CAP ON')
+        else:
+            self.device.write(':SOUR:VOLT:HIGH:CAP OFF')
+    
+    def set_voltage_range(self, range):
+        if range == 'Auto':
+            self.device.write(':SOUR:VOLT:RANG:AUTO ON')
+        else:
+            self.device.write(':SOUR:VOLT:RANG:AUTO OFF')
+            self.device.write(f':SOUR:VOLT:RANG {range}')
+    
+    def set_current_range(self, range):
+        if range == 'Auto':
+            self.device.write(':SENS:CURR:RANG:AUTO ON')
+        else:
+            self.device.write(':SENS:CURR:RANG:AUTO OFF')
+            self.device.write(f':SENS:CURR:RANG {range}')
+
+    def set_filter(self, filter, filter_type, filter_num):
+        self.device.write(f':SENS:CURR:AVER:COUN {str(filter_num)}')
+        if filter_type == 'Moving Average':
+            self.device.write(f':SENS:CURR:AVER:TCON MOV')
+        elif filter_type == 'Repeat Average':
+            self.device.write(f':SENS:CURR:AVER:TCON REP')
+        if filter:
+            self.device.write(':SENS:CURR:AVER ON')
+        else:
+            self.device.write(':SENS:CURR:AVER OFF')
+
+    def set_nplc(self, nplc):
+        self.device.write(f':SENS:CURR:NPLC {str(nplc)}')
+
+    def set_auto_zero(self, auto_zero):
+        if auto_zero:
+            self.device.write(':SENS:CURR:AZER ON')
+        else:
+            self.device.write(':SENS:CURR:AZER OFF')
 
     def enable_output(self, enable):
         if enable:
@@ -183,6 +225,7 @@ class K2400:
         self.device.write(f':SOUR:VOLT {str(voltage)}')
 
     def measure_current(self):
+        self.clear_buffer()
         current = float(self.device.query(':MEAS:CURR?').strip('\n'))
         return current
 

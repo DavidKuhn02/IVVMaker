@@ -14,8 +14,6 @@ for port in ports:
 
 device.write('*RST')
 device.write('*CLS')
-device.write("*LANG SCPI")
-device.write(':SOUR:FUNC VOLTage') # Sets Source to voltage mode (needed for IV Curves)
-#device.write(':SOUR:VOLT 0') #Sets the output voltage to 0     
+device.write(':SOUR:VOLT 0') #Sets the output voltage to 0     
 
 device.close()

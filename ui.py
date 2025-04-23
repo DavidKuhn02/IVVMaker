@@ -1,5 +1,5 @@
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QLabel, QMessageBox, QLineEdit, QComboBox, QScrollArea, QFrame, QVBoxLayout, QGroupBox, QSpinBox, QDoubleSpinBox, QCheckBox, QRadioButton, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QWidget, QDialog, QGridLayout, QPushButton, QLabel, QMessageBox, QLineEdit, QComboBox, QScrollArea, QFrame, QVBoxLayout, QGroupBox, QSpinBox, QDoubleSpinBox, QCheckBox, QRadioButton, QSizePolicy
 from PyQt5.QtCore import QThread, pyqtSignal
 import pyvisa as visa
 import devices
@@ -319,3 +319,5 @@ class Ui_MainWindow(QWidget):
             event.accept()
         else:
             event.ignore()
+
+
