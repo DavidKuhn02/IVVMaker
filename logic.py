@@ -33,6 +33,7 @@ class Functionality:
             device.close()  
         for device in self.ui.device_handler.lowV_devices:
             device.close()
+        self.update_measurement_settings()
         config = self.config_manager.assemble_config()
         self.config_manager.save_config(config, os.path.join(os.path.dirname(__file__), 'config', 'latest.json'))
 
@@ -180,7 +181,6 @@ class Functionality:
         #It is used to set the parameters for the device, like voltage range, current range, etc.
         self.parameter_dialog = parameter_dialog.ParameterDiaglog_K2400(device, id, self.ui.rm)
         self.parameter_dialog.show()
-
     
     def reset_device(self, device): 
         #Function for the device widget to reset the device
@@ -235,21 +235,7 @@ class Functionality:
 
         print(self.ui.device_handler.voltmeter_devices)
         print(self.ui.device_handler.resistancemeter_devices)
-
-    def enable_fixed_voltage(self):
-        #This function enables or disables the fixed voltage mode
-        #It changes the UI accordingly and sets the fixed voltage variable
-        self.fixed_voltage = self.ui.fixed_voltage_checkBox.isChecked()
-        self.ui.startV.setEnabled(not self.fixed_voltage)
-        self.ui.stopV.setEnabled(not self.fixed_voltage)
-        self.ui.stepV.setEnabled(not self.fixed_voltage)
-        self.ui.measurements_per_step.setEnabled(not self.fixed_voltage)
-        self.ui.time_between_steps.setEnabled(not self.fixed_voltage)
-        self.ui.use_custom_sweep_checkBox.setEnabled(not self.fixed_voltage)
-        self.ui.fixed_voltage.setEnabled(self.fixed_voltage)
-        self.ui.canvas.constant_voltage = self.ui.fixed_voltage_checkBox.isChecked()
-        self.ui.canvas.start_plot() #Restart the plot with clearing the old data, as sweep and constant measurments cant be in the same plot for now
-            
+     
     def enable_custom_sweep(self):
         #This function enables or disables the custom sweep mode 
         self.ui.custom_sweep = self.ui.use_custom_sweep_checkBox.isChecked()
@@ -261,6 +247,22 @@ class Functionality:
         folder = QFileDialog.getExistingDirectory(self.ui, 'Select a Folder')
         if folder:
             self.ui.folder_path.setText(folder)
+
+    def change_measurement_type(self, type):
+        self.ui.measurement_type = type
+        if type == 'IV':
+            layout = self.ui.changeUI_IV()
+        elif type == 'CV':
+            layout = self.ui.changeUI_CV()
+        elif type == 'Constant Voltage':
+            layout = self.ui.changeUI_ConstantVoltage()
+        self.update_measurement_settings()
+        
+        oldLayout = self.ui.measurement_settings.layout()
+        if oldLayout is not None:
+            QWidget().setLayout(oldLayout)  # Clear the old layout
+        self.ui.measurement_settings.setLayout(layout) #Set the new layout
+        self.config_manager.apply_config(self.config_manager.assemble_config()) #Apply the config to the new layout
 
     def select_canvas_file(self):
         #This function opens a file dialog to select a file for the canvas
@@ -310,51 +312,80 @@ class Functionality:
 
     def ui_changes_start(self): 
         #This function changes the UI when the measurement is started
-        self.ui.startV.setEnabled(False)
-        self.ui.stopV.setEnabled(False)
-        self.ui.stepV.setEnabled(False)
-        self.ui.measurements_per_step.setEnabled(False)
-        self.ui.time_between_steps.setEnabled(False)
-        self.ui.time_between_measurements.setEnabled(False)
-        self.ui.limitI.setEnabled(False)
-        self.ui.use_custom_sweep_checkBox.setEnabled(False)
-        self.ui.custom_sweep_file.setEnabled(False)
-        self.ui.fixed_voltage_checkBox.setEnabled(False)
         self.ui.abort_button.setEnabled(True)
         self.ui.start_button.setEnabled(False)
-        self.ui.select_decive.setEnabled(False)
-        self.ui.refresh_button.setEnabled(False)
-        self.ui.add_device_button.setEnabled(False)
-        self.ui.add_all_devices_button.setEnabled(False)
+        self.ui.measurement_settings.setEnabled(False)
         for widget in self.ui.device_widgets:
             widget.setEnabled(False)
         
     def ui_changes_stop(self):
         #This function changes the UI when the measurement is stopped
-        self.ui.startV.setEnabled(True)
-        self.ui.stopV.setEnabled(True)
-        self.ui.stepV.setEnabled(True)
-        self.ui.measurements_per_step.setEnabled(True)
-        self.ui.time_between_measurements.setEnabled(True)
-        self.ui.limitI.setEnabled(True)
-        self.ui.time_between_steps.setEnabled(True)
-        self.ui.use_custom_sweep_checkBox.setEnabled(True)
-        self.ui.custom_sweep_file.setEnabled(self.ui.use_custom_sweep_checkBox.isChecked())
-        self.ui.fixed_voltage_checkBox.setEnabled(True)
-        self.ui.fixed_voltage.setEnabled(self.ui.fixed_voltage_checkBox.isChecked())
         self.ui.abort_button.setEnabled(False)
         self.ui.start_button.setEnabled(True)
-        self.ui.select_decive.setEnabled(True)
-        self.ui.refresh_button.setEnabled(True)
-        self.ui.add_device_button.setEnabled(True)
-        self.ui.add_all_devices_button.setEnabled(True)
+        self.ui.measurement_settings.setEnabled(True)
         for widget in self.ui.device_widgets:
             widget.setEnabled(True)
+    
+    def update_measurement_settings(self):
+        #This function reads the measurement settings from the UI and updates the measurement settings
+        #It is either called when ending the program or when the user clicks the start button
+        if self.ui.measurement_type == 'IV':
+            self.ui.IV_settings = { # Dict to store the settings for the IV measurement
+        'startV': self.ui.startV_spinBox.value(),
+        'stopV': self.ui.stopV_spinBox.value(),
+        'stepV': self.ui.stepV_spinBox.value(),
+        'measurements_per_step': self.ui.measurements_per_step_spinBox.value(),
+        'time_between_measurements': self.ui.time_between_measurements_spinBox.value(),
+        'time_between_steps': self.ui.time_between_steps_spinBox.value(),
+        'limitI': self.ui.limitI_spinBox.value(),
+        'custom_sweep': self.ui.use_custom_sweep_checkBox.isChecked(),
+        }
+        elif self.ui.measurement_type == 'CV':
+            self.ui.CV_settings = { # Dict to store the settings for the CV measurement
+        'startV': self.ui.startV_spinBox.value(),
+        'stopV': self.ui.stopV_spinBox.value(),
+        'stepV': self.ui.stepV_spinBox.value(),
+        'startFrequency': self.ui.start_frequency_spinBox.value(),
+        'stopFrequency': self.ui.stop_frequency_spinBox.value(),
+        'number_of_frequencies': self.ui.number_of_frequencies_spinBox.value(),#
+        'logarithmic_frequency_steps': self.ui.logarithmic_frequency_steps_checkBox.isChecked(),
+        'time_between_steps': self.ui.time_between_steps_spinBox.value(),
+        'time_between_measurements': self.ui.time_between_measurements_spinBox.value(),
+        'measurements_per_step': self.ui.measurements_per_step_spinBox.value(),
+        'limitI': self.ui.limitI_spinBox.value()
+            }
+        elif self.ui.measurement_type == 'Constant Voltage':
+            self.ui.ConstantVoltage_settings = { # Dict to store the settings for the Constant Voltage measurement
+            'constant_voltage': self.ui.constant_voltage_spinBox.value(),
+            'time_between_measurements': self.ui.time_between_measurements_spinBox.value(),
+            'limitI': self.ui.limitI_spinBox.value(),
+            }
 
     def start_measurement(self):
         #This function is responsible for actually starting the measurement
         #It takes care of the UI changes and starts the measurement thread
         #It also takes care of the data saving and the sweep creation
+        self.update_measurement_settings() #Update the measurement settings
+        settings = self.ui.IV_settings if self.ui.measurement_type == 'IV' else self.ui.CV_settings if self.ui.measurement_type == 'CV' else self.ui.constantV_settings
+        self.ui_changes_start()
+        if self.ui.measurement_type == 'IV':
+            if settings['custom_sweep']:
+                sweep = self.ui.sweep_creator.read_sweep(self.ui.custom_sweep_file.text())
+            else:
+                try:
+                    sweep = self.ui.sweep_creator.linear_sweep(
+                        start = settings['startV'],
+                        stop = settings['stopV'],
+                        steps = settings['stepV'],
+                        number_of_measurements = settings['measurements_per_step'])
+                except Exception as e:
+                    self.abort_measurement('Error creating sweep. Please check your sweep parameters and try again. ' + str(e))
+                    return
+        elif self.ui.measurement_type == 'CV':
+            return
+
+
+
         if self.ui.use_custom_sweep_checkBox.isChecked(): #if a custom sweep is selected, read the data from the file
             try:
                 sweep = self.ui.sweep_creator.read_sweep(self.ui.custom_sweep_file.text())
@@ -384,9 +415,11 @@ class Functionality:
                 ui = self.ui,
                 functionality = self,
                 sweep = sweep)
+            
         except FileExistsError:
             self.file_exists_error()
             return
+        
         self.ui_changes_start()
         if not self.safety_check(startV= self.ui.startV.value(), stopV=self.ui.stopV.value()): # Check if a positive voltage is gonna be applied, if yes ask user to proceed
             self.abort_measurement('Safety Check failed, preventing chip damage')
@@ -595,4 +628,37 @@ class Sweep: #class that can create voltage sweeps, for now only linear sweeps a
     def read_sweep(self, file):
         return np.loadtxt(file, delimiter = ' ', usecols=[0, 1]) #reads a csv file with the sweep data
     
+    def read_frequency_sweep(self, file):
+        voltages, n = np.loadtxt(file, delimiter= ' ', unpack= True, usecols = [0, 1])
+        frequencies = np.loadtxt(file, delimiter= ' ', unpack= True, usecols= [2])
+        return np.array(np.column_stack(voltages, n), frequencies) 
+
+    def frequency_sweep_log(self, startV, stopV, stepV, number_of_measurements, startF, stopF, number_of_frequencies):
+        #Creates an array for voltage and frequency sweeps [voltage, [frequencies at this voltage step]]
+        #For the frequency sweep, the frequencies are logarithmically spaced, and for all voltages the same frequencies are used
+        #If you use different frequencies for each voltage, you need to create the array manually
+        if startV == stopV:
+            raise ValueError('Start and stop voltage are the same, no sweep possible')
+        if startV > stopV:
+            if stepV > 0:
+                raise ValueError('Steps must be negative if start is greater than stop')
+            if abs(stopV-startV) < abs(stepV):
+                raise ValueError('Steps are too big for the given range')
+        else:
+            if stepV < 0:
+                raise ValueError('Steps must be positive if start is less than stop')
+            if abs(stopV-startV) < abs(stepV):
+                raise ValueError('Steps are too big for the given range')
+        if stepV == 0:
+            raise ValueError('Steps must not be zero')
+        if startF == stopF:
+            raise ValueError('Start and stop frequency are the same, no sweep possible')
+        if startF > stopF:
+            raise ValueError('Start frequency must be less than stop frequency')
+        
+        voltages = np.arange(startV, stopV+stepV, stepV)
+        n = np.ones(len(voltages))*number_of_measurements
+        frequencies = np.logspace(np.log10(startF), np.log10(stopF), number_of_frequencies, endpoint=True)
+        
+        sweep = np.array([np.column_stack(voltages, n), frequencies])
 

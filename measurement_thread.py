@@ -8,7 +8,7 @@ class MeasurementThread(QThread):
     data_signal = pyqtSignal(list)  #signal that is emitted when data is available
     finished_signal = pyqtSignal() #signal that is emitted when the measurement is finished or aborted
 
-    def __init__(self, limit_I, sweep, constant_voltage, time_between_measurements, time_between_steps, run_sweep: bool , device_handler, functionallity):
+    def __init__(self, limit_I, sweep, constant_voltage, time_between_measurements, time_between_steps, device_handler, functionallity, measurement_type = 'IV'):
         super().__init__()
         self.limit_I = float(limit_I) #current limit for the SMUs in A
         self.voltages = sweep[:, 0] #array of the voltages included in the sweep (first column of the sweep array)
@@ -19,16 +19,17 @@ class MeasurementThread(QThread):
         self.device_handler = device_handler #Device handler object that contains all the devices
         self.running = True #flag that indicates if the measurement is running
         self.functionallity = functionallity #Passes the logic into this class, as this could be needed
-        self.sweep = run_sweep #True if the measurement is a sweep measurement, False if it is a constant voltage measurement
-
+        self.measurment_type = measurement_type #Type of measurement (IV constantV, CV, ...[possibly more in the future])
     def run(self): 
         #Main function that runs the measurement
         #This function is called when the thread is started
-        if self.sweep:
+        if self.measurment_type == 'IV':
             self.run_sweep()
-        else:
+        elif self.measurment_type == 'constantV':
             self.run_constant()
-
+        elif self.measurment_type == 'CV':
+            self.run_cv_measurement()
+        
     def start_measurement(self, start):
         #Function that is called when the measurement is started
         #This function sets the voltage and current limits for the SMUs and clears the buffer
@@ -83,6 +84,11 @@ class MeasurementThread(QThread):
             data = self.read_data()
             self.send_data(data)
             time.sleep(self.time_between_measurements)
+
+    def run_cv_measurement(self):
+        #This function is used to do CV measurements. This works only with a HAMEG 8118 connected.
+        return 
+
 
     def read_data(self):
         #Function to read the data from all active devices

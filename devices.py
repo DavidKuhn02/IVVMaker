@@ -329,3 +329,41 @@ class LowVoltagePowerSupplies: #Rhode&Schwarz NGE 100 and HAMEG HMP4040
             U.append(float(self.device.query('MEAS:VOLT?')))
         
         return U, I
+
+class Hameg8118:
+    def __init__(self, port, id, rm):
+        self.device = rm.open_resource(port)
+        self.port = port
+        self.assigned_id = id
+        self.reset()
+        self.clear_buffer()
+
+    def reset(self):
+        self.device.write('*RST')
+        
+    def clear_buffer(self):
+        self.device.write('*CLS')
+    
+    def return_port(self):
+        return self.port
+    
+    def return_id(self):
+        return self.device.query('*IDN?')
+    
+    def return_assigned_id(self):
+        return self.assigned_id
+    
+    def close(self):
+        self.device.close()
+    
+    def set_frequency(self, frequency):
+        self.device.write(f'FREQ {frequency}')
+
+    def set_voltage(self, voltage):#
+        self.device.write(f'VOLT {voltage}')
+    
+    def read_output(self):
+        return self.device.query('XALL?').strip('\n').split(',')
+    
+    
+        
