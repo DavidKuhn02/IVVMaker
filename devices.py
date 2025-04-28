@@ -333,6 +333,8 @@ class LowVoltagePowerSupplies: #Rhode&Schwarz NGE 100 and HAMEG HMP4040
 class Hameg8118:
     def __init__(self, port, id, rm):
         self.device = rm.open_resource(port)
+        self.device.read_termination = '\r'
+        self.device.write_termination = '\r'
         self.port = port
         self.assigned_id = id
         self.reset()

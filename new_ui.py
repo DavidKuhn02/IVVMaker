@@ -4,7 +4,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 import pyvisa as visa
 import devices
 import plotting
-from logic import Functionality, Device_Handler, Sweep
+from logic import Functionality, Device_Handler
 from config_manager import config_manager
 import os 
 
@@ -18,7 +18,6 @@ class Ui_MainWindow(QWidget):
         super().__init__()
         self.rm = rm
         self.device_handler = Device_Handler(self.rm) # Initialize the device handler
-        self.sweep_creator = Sweep()
         self.logic = Functionality(self)
         self.measurement_type = 'IV'  # Default measurement type
         self.IV_settings = { # Dict to store the settings for the IV measurement
@@ -30,6 +29,7 @@ class Ui_MainWindow(QWidget):
         'measurements_per_step': 0,
         'limitI': 0,
         'custom_sweep': False,
+        'custom_sweep_file': '',
         }
         self.constantV_settings = { # Dict to store the settings for the constant voltage measurement
             'constant_voltage': 0,
@@ -48,8 +48,11 @@ class Ui_MainWindow(QWidget):
             'time_between_measurements': 0,
             'measurements_per_step': 0,
             'limitI': 0,
+            'custom_sweep': False,
+            'custom_sweep_file': '',
         }
         self.setup_ui()
+
         self.logic.openEvent()
 
 
@@ -117,6 +120,7 @@ class Ui_MainWindow(QWidget):
 
         self.measurement_type_comboBox = QComboBox()  #Select Measurement Type ComboBox
         self.measurement_type_comboBox.addItems(['IV', 'Constant Voltage', 'CV'])
+        self.measurement_type_comboBox.setToolTip('Select the measurement type')   
         self.measurement_type_comboBox.setCurrentText(self.measurement_type)
         self.measurement_type_comboBox.currentTextChanged.connect(lambda: self.logic.change_measurement_type(self.measurement_type_comboBox.currentText())) #Connects the ComboBox to the logic function
         self.measurement_settings_layout.addWidget(QLabel('Select Measurement Type'), 0, 0)
@@ -127,6 +131,9 @@ class Ui_MainWindow(QWidget):
         self.measurement_settings_scrollArea = QScrollArea()
         self.measurement_settings_scrollArea.setWidget(self.measurement_settings)
         self.measurement_settings_scrollArea.setWidgetResizable(True)
+        self.measurement_settings_scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn) #Always show the vertical scroll bar
+        self.measurement_settings_scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.measurement_settings_scrollArea.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding) #Set the size policy of the scroll area
         self.measurement_settings_scrollArea.setMinimumSize(300, 300) #Sets the minimum size of the scroll area
         self.measurement_settings_layout.addWidget(self.measurement_settings_scrollArea, 1, 0, 1, 2) #Add the widget to the layout
 
@@ -224,6 +231,9 @@ class Ui_MainWindow(QWidget):
 
     def changeUI_IV(self):
         # Function to change the UI to the IV measurement
+        outer_layout = QVBoxLayout()  #This is needed to align the settings to the top of the box
+        outer_layout.setAlignment(QtCore.Qt.AlignTop)
+        outer_layout.setAlignment(QtCore.Qt.AlignLeft)
 
         layout = QGridLayout()
         layout.setAlignment(QtCore.Qt.AlignTop)
@@ -290,10 +300,19 @@ class Ui_MainWindow(QWidget):
         self.custom_sweep_file.setPlaceholderText('Enter path to sweep file')
         layout.addWidget(self.custom_sweep_file, 8, 0, 1, 2)
 
-        return layout
+        outer_layout.addLayout(layout)
+        outer_layout.setAlignment(QtCore.Qt.AlignTop)
+        outer_layout.setAlignment(QtCore.Qt.AlignLeft)
+        
+        return outer_layout
 
-    def changeUI_ConstantVoltage(self):
-        layout = QFormLayout()
+    def changeUI_ConstantVoltage(self): 
+        # Function to change the UI to the Constant Voltage measurement
+        outer_layout = QVBoxLayout()
+        outer_layout.setAlignment(QtCore.Qt.AlignTop)
+        outer_layout.setAlignment(QtCore.Qt.AlignLeft)
+
+        layout = QGridLayout()
         layout.setAlignment(QtCore.Qt.AlignTop)
         layout.setAlignment(QtCore.Qt.AlignLeft)
 
@@ -301,25 +320,32 @@ class Ui_MainWindow(QWidget):
         self.constant_voltage_spinBox.setRange(-1100, 1100)
         self.constant_voltage_spinBox.setDecimals(2)
         self.constant_voltage_spinBox.setSuffix(' V')
-        layout.addRow(QLabel('Constant Voltage [V]'), self.constant_voltage_spinBox)
+        layout.addWidget(QLabel('Constant Voltage [V]'), 0, 0)
+        layout.addWidget(self.constant_voltage_spinBox, 0, 1)
 
         self.time_between_measurements_spinBox = QDoubleSpinBox()
         self.time_between_measurements_spinBox.setRange(0, 1000)
         self.time_between_measurements_spinBox.setDecimals(2)
         self.time_between_measurements_spinBox.setSuffix(' s')
-        layout.addRow(QLabel('Time between measurements'), self.time_between_measurements_spinBox)
+        layout.addWidget(QLabel('Time between measurements [s]'), 1, 0)
+        layout.addWidget(self.time_between_measurements_spinBox, 1, 1)
 
         self.limitI_spinBox = QDoubleSpinBox()
         self.limitI_spinBox.setRange(0, 1e6)
         self.limitI_spinBox.setDecimals(2)
         self.limitI_spinBox.setSuffix(' uA')
-        layout.addRow(QLabel('Current limit [uA]'), self.limitI_spinBox)
+        layout.addWidget(QLabel('Current limit [uA]'), 2, 0)
+        layout.addWidget(self.limitI_spinBox, 2, 1)
 
-        return layout
+        outer_layout.addLayout(layout)
+        outer_layout.setAlignment(QtCore.Qt.AlignTop)
+
+        return outer_layout
     
     def changeUI_CV(self):
-    # Function to change the UI to the CV measurement
-
+        # Function to change the UI to the CV measurement
+        outer_layout = QVBoxLayout()
+        
         layout = QGridLayout()
         layout.setAlignment(QtCore.Qt.AlignTop)
         layout.setAlignment(QtCore.Qt.AlignLeft)
@@ -410,7 +436,11 @@ class Ui_MainWindow(QWidget):
         self.custom_sweep_file.setPlaceholderText('Enter path to sweep file')
         layout.addWidget(self.custom_sweep_file, 12, 0, 1, 2)
 
-        return layout
+        outer_layout.addLayout(layout)
+        outer_layout.setAlignment(QtCore.Qt.AlignTop)
+        outer_layout.setAlignment(QtCore.Qt.AlignLeft)
+
+        return outer_layout
     
     def canvas_settings_UI(self):
         self.canvas_settings_functions = plotting.Canvas_functions(self)  #Initialize the canvas functions

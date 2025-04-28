@@ -44,6 +44,8 @@ class config_manager:
             self.ui.time_between_measurements_spinBox.setValue(sub_config['time_between_measurements'])
             self.ui.measurements_per_step_spinBox.setValue(sub_config['measurements_per_step'])
             self.ui.limitI_spinBox.setValue(sub_config['limitI'])
+            self.ui.use_custom_sweep_checkBox.setChecked(sub_config['custom_sweep'])
+            self.ui.custom_sweep_file.setText(sub_config['custom_sweep_file'])
         elif config['measurement_type'] == 'CV':
             sub_config = config['CV']
             self.ui.startV_spinBox.setValue(sub_config['startV'])
@@ -57,6 +59,8 @@ class config_manager:
             self.ui.time_between_measurements_spinBox.setValue(sub_config['time_between_measurements'])
             self.ui.measurements_per_step_spinBox.setValue(sub_config['measurements_per_step'])
             self.ui.limitI_spinBox.setValue(sub_config['limitI'])
+            self.ui.use_custom_sweep_checkBox.setChecked(sub_config['custom_sweep'])
+            self.ui.custom_sweep_file.setText(sub_config['custom_sweep_file'])
         elif config['measurement_type'] == 'Constant Voltage':
             sub_config = config['Constant Voltage']
             self.ui.constant_voltage_spinBox.setValue(sub_config['constant_voltage'])

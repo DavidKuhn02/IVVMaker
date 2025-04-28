@@ -91,6 +91,9 @@ class Functionality:
             elif 'HAMEG HMP4040' in candidate[2]:
                 device = devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.lowV_devices.append(device)
+            elif 'HAMEG HM8118' in candidate[2]:
+                device = devices.Hameg8118(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                self.ui.device_handler.capacitancemeter_devices.append(device)
             elif 'Dummy' in candidate[2]: #For testing purposes 
                 device = devices.Dummy_Device(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
             else:
@@ -249,6 +252,7 @@ class Functionality:
             self.ui.folder_path.setText(folder)
 
     def change_measurement_type(self, type):
+        self.update_measurement_settings()
         self.ui.measurement_type = type
         if type == 'IV':
             layout = self.ui.changeUI_IV()
@@ -256,8 +260,6 @@ class Functionality:
             layout = self.ui.changeUI_CV()
         elif type == 'Constant Voltage':
             layout = self.ui.changeUI_ConstantVoltage()
-        self.update_measurement_settings()
-        
         oldLayout = self.ui.measurement_settings.layout()
         if oldLayout is not None:
             QWidget().setLayout(oldLayout)  # Clear the old layout
@@ -289,7 +291,8 @@ class Functionality:
         #This function reads the measurement settings from the UI and updates the measurement settings
         #It is either called when ending the program or when the user clicks the start button
         if self.ui.measurement_type == 'IV':
-            self.ui.IV_settings = { # Dict to store the settings for the IV measurement
+            try: 
+                self.ui.IV_settings = { # Dict to store the settings for the IV measurement
         'startV': self.ui.startV_spinBox.value(),
         'stopV': self.ui.stopV_spinBox.value(),
         'stepV': self.ui.stepV_spinBox.value(),
@@ -298,9 +301,14 @@ class Functionality:
         'time_between_steps': self.ui.time_between_steps_spinBox.value(),
         'limitI': self.ui.limitI_spinBox.value(),
         'custom_sweep': self.ui.use_custom_sweep_checkBox.isChecked(),
-        }
+        'custom_sweep_file': self.ui.custom_sweep_file.text(),
+             }
+            except Exception as e:
+                print('Error updating measurement settings', e)
+                    
         elif self.ui.measurement_type == 'CV':
-            self.ui.CV_settings = { # Dict to store the settings for the CV measurement
+            try:
+                self.ui.CV_settings = { # Dict to store the settings for the CV measurement
         'startV': self.ui.startV_spinBox.value(),
         'stopV': self.ui.stopV_spinBox.value(),
         'stepV': self.ui.stepV_spinBox.value(),
@@ -311,98 +319,57 @@ class Functionality:
         'time_between_steps': self.ui.time_between_steps_spinBox.value(),
         'time_between_measurements': self.ui.time_between_measurements_spinBox.value(),
         'measurements_per_step': self.ui.measurements_per_step_spinBox.value(),
-        'limitI': self.ui.limitI_spinBox.value()
+        'limitI': self.ui.limitI_spinBox.value(),
+        'custom_sweep': self.ui.use_custom_sweep_checkBox.isChecked(),
+        'custom_sweep_file': self.ui.custom_sweep_file.text(),
             }
+            except Exception as e:
+                print('Error updating measurement settings', e)
+
         elif self.ui.measurement_type == 'Constant Voltage':
-            self.ui.ConstantVoltage_settings = { # Dict to store the settings for the Constant Voltage measurement
+            try:
+                self.ui.ConstantVoltage_settings = { # Dict to store the settings for the Constant Voltage measurement
             'constant_voltage': self.ui.constant_voltage_spinBox.value(),
             'time_between_measurements': self.ui.time_between_measurements_spinBox.value(),
             'limitI': self.ui.limitI_spinBox.value(),
             }
+            except Exception as e:
+                print('Error updating measurement settings', e)
 
     def start_measurement(self):
         #This function is responsible for actually starting the measurement
         #It takes care of the UI changes and starts the measurement thread
         #It also takes care of the data saving and the sweep creation
         self.update_measurement_settings() #Update the measurement settings
-        settings = self.ui.IV_settings if self.ui.measurement_type == 'IV' else self.ui.CV_settings if self.ui.measurement_type == 'CV' else self.ui.constantV_settings
-        self.ui_changes_start()
-        if self.ui.measurement_type == 'IV':
-            if settings['custom_sweep']:
-                sweep = self.ui.sweep_creator.read_sweep(self.ui.custom_sweep_file.text())
-            else:
-                try:
-                    sweep = self.ui.sweep_creator.linear_sweep(
-                        start = settings['startV'],
-                        stop = settings['stopV'],
-                        steps = settings['stepV'],
-                        number_of_measurements = settings['measurements_per_step'])
-                except Exception as e:
-                    self.abort_measurement('Error creating sweep. Please check your sweep parameters and try again. ' + str(e))
-                    return
-        elif self.ui.measurement_type == 'CV':
-            return
-
-
-
-        if self.ui.use_custom_sweep_checkBox.isChecked(): #if a custom sweep is selected, read the data from the file
-            try:
-                sweep = self.ui.sweep_creator.read_sweep(self.ui.custom_sweep_file.text())
-            except FileNotFoundError:
-                self.abort_measurement('File not found')
-                return
-            if len(sweep) == 0:
-                self.abort_measurement('Sweep file is empty')
-                return
-
-        else: #Create sweep from the given params if no custom sweep is selected
-            try:
-                sweep = self.ui.sweep_creator.linear_sweep(
-                    start = self.ui.startV.value(), 
-                    stop = self.ui.stopV.value(), 
-                    steps = self.ui.stepV.value(), 
-                    number_of_measurements = self.ui.measurements_per_step.value())
-            except Exception as e: 
-                self.abort_measurement('Error creating sweep. Please check your sweep parameters and try again. ' + str(e))
-                return
-        
-        
         try:  #try to create the data saver object, if the file already exists, raise an error
             self.data_saver = data_handler.DataSaver(   #start the data save thread 
                 filepath = self.ui.folder_path.text(),
                 filename = self.ui.filename.text(),
                 ui = self.ui,
-                functionality = self,
-                sweep = sweep)
+                functionality = self)
             
         except FileExistsError:
             self.file_exists_error()
-            return
+            return        
         
-        self.ui_changes_start()
-        if not self.safety_check(startV= self.ui.startV.value(), stopV=self.ui.stopV.value()): # Check if a positive voltage is gonna be applied, if yes ask user to proceed
-            self.abort_measurement('Safety Check failed, preventing chip damage')
-            return
-        if not self.ui.device_handler.smu_devices:   #abort measurement if no SMU connected
-            self.abort_measurement('No SMU connected')
-            return
-        if not self.test_communication(): #Test the communication with the devices, if it fails, abort the measurement
-            return
-
-        self.measurement_thread = measurement_thread.MeasurementThread( #start the measurement thread with the given params
-            limit_I = self.ui.limitI.value()*1e-6, 
-            sweep = sweep,
-            constant_voltage = self.ui.fixed_voltage.value(),
-            time_between_measurements = self.ui.time_between_measurements.value(),
-            time_between_steps = self.ui.time_between_steps.value(),
-            run_sweep = not self.ui.fixed_voltage_checkBox.isChecked(),
-            device_handler = self.ui.device_handler,
-            functionallity = self)
-        if self.ui.canvas_keep_measurement.isChecked():
-            self.ui.canvas.keep_data(self.data_saver.filepath, self.ui.time_between_measurements.value())
-        self.ui.canvas.restart_plot()
-        self.ui.canvas.update_plot()
-        self.measurement_thread.start() #start the measurement
+        self.measurement_thread = measurement_thread.MeasurementThread() #start the measurement thread 
+        self.ui_changes_start() #Change the UI to show that the measurement is running
+        if self.ui.measurement_type == 'IV':  #Start IV measurement
+            self.write_parameters(self.ui.IV_settings)
+            if not self.safety_check(parameters=self.ui.IV_settings, type = 'IV'): #Perform various checks before starting the measurement
+                return
+            self.measurement_thread.IV_signal.emit(self.ui.IV_settings)
+        elif self.ui.measurement_type == 'CV': #Start CV measurement
+            self.write_parameters(self.ui.CV_settings)
+            if not self.safety_check(parameters=self.ui.CV_settings, type = 'CV'): #Perform various checks before starting the measurement
+                return
+            self.measurement_thread.CV_signal.emit(self.ui.CV_settings)
+        elif self.ui.measurement_type == 'Constant Voltage': #Start Constant Voltage measurement
+            self.write_parameters(self.ui.ConstantV_settings)
+            if not self.safety_check(parameters=self.ui.ConstantV_settings, type = 'Constant Voltage'): #Perform various checks before starting the measurement
+                return
+            self.measurement_thread.ConstantVoltage_signal.emit(self.ui.ConstantV_settings)    
+            
         self.measurement_thread.data_signal.connect(self.receive_data)  #Handles the data signal from the measurement thread
         self.measurement_thread.finished_signal.connect(self.finish_measurement) # Handles the finished signal from the measurement thread
 
@@ -415,16 +382,61 @@ class Functionality:
         self.ui.abort_button.setEnabled(False)
         warning = QMessageBox.warning(self.ui, 'Warning', 'Afile with this name already exists, please enter a different filename.', QMessageBox.Ok, QMessageBox.Ok)
 
-    def safety_check(self, startV, stopV):  
-        #This function checks if the start and stop voltage are positive, if yes, ask the user to proceed, because HV-MAPS dont like positive voltages
-        if startV > 0 or stopV > 0:
-            reply = QMessageBox.warning(self.ui, 'Chip Safety', 'Are you sure you want to apply a positive HV to the tested device?', QMessageBox.Yes| QMessageBox.No,  QMessageBox.No)
-            if reply == QMessageBox.Yes:
-                return True
-            else:
+    def safety_check(self, parameters=None, type = 'IV'): #This function performs various checks before starting the measurement
+        #Check if all connected devices are communicating correctly
+        if not self.test_communication():
+            return
+        if parameters is None:
+            self.abort_measurement('No parameters given')
+        
+        if type == 'IV': # Check the parameters for the IV measurement
+            if parameters['startV'] == parameters['stopV']:
+                self.abort_measurement('Start and stop voltage are the same, please enter different values.')
                 return False
-        else:
-            return True
+            if parameters['startV'] > parameters['stopV'] and parameters['stepV'] > 0:
+                self.abort_measurement('Start voltage is greater than stop voltage, therefore a negative step voltages is required.')
+                return False
+            if parameters['startV'] < parameters['stopV'] and parameters['stepV'] < 0:
+                self.abort_measurement('Start voltage is smaller than stop voltage, therefore a positive step voltages is required.')
+                return False
+            if abs(parameters['stepV']) > abs(parameters['stopV'] - parameters['startV']):
+                self.abort_measurement('Step voltage is greater than the range of the sweep, please enter a smaller value.')
+                return False
+
+            if parameters['startV'] > 0 and parameters['stopV'] > 0:
+                response = QMessageBox.warning(self.ui, 'Warning', 'You are about to apply a positive voltage to the device. Only proceed if this is intended, as it could damage the DUT.', QMessageBox.Ok | QMessageBox.Cancel, QMessageBox.Ok)
+                if response == QMessageBox.Cancel:
+                    self.abort_measurement('Measurement aborted by user.')
+                    return False
+            
+        elif type == 'CV':
+            if parameters['startV'] == parameters['stopV']:
+                self.abort_measurement('Start and stop voltage are the same, please enter different values.')
+                return False
+            if parameters['startV'] > parameters['stopV'] and parameters['stepV'] > 0:
+                self.abort_measurement('Start voltage is greater than stop voltage, therefore a negative step voltages is required.')
+                return False
+            if parameters['startV'] < parameters['stopV'] and parameters['stepV'] < 0:
+                self.abort_measurement('Start voltage is smaller than stop voltage, therefore a positive step voltages is required.')
+                return False
+            if abs(parameters['stepV']) > abs(parameters['stopV'] - parameters['startV']):
+                self.abort_measurement('Step voltage is greater than the range of the sweep, please enter a smaller value.')
+                return False
+            if parameters['startV'] > 0 and parameters['stopV'] > 0:
+                response = QMessageBox.warning(self.ui, 'Warning', 'You are about to apply a positive voltage to the device. Only proceed if this is intended, as it could damage the DUT.', QMessageBox.Ok | QMessageBox.Cancel, QMessageBox.Ok)
+                if response == QMessageBox.Cancel:
+                    self.abort_measurement('Measurement aborted by user.')
+                    return False
+            if parameters['startFrequency'] == parameters['stopFrequency'] and parameters['number_of_frequencies'] != 1:
+                self.abort_measurement('Start and stop frequency are the same, please enter different values.')
+                return False
+            
+        elif type == 'Constant Voltage':
+            if parameters['constant_voltage'] > 0:
+                response = QMessageBox.warning(self.ui, 'Warning', 'You are about to apply a positive voltage to the device. Only proceed if this is intended, as it could damage the DUT.', QMessageBox.Ok | QMessageBox.Cancel, QMessageBox.Ok)
+                if response == QMessageBox.Cancel:
+                    self.abort_measurement('Measurement aborted by user.')
+                    return False
 
     def test_communication(self): #This function tests the communication with the connected devices by sending a *IDN? command and checking if the response is valid. If any of the devices fail, it will disconnect them and give a warning
         for device in self.ui.device_handler.smu_devices:
@@ -467,7 +479,6 @@ class Functionality:
         self.data_saver.close()
         print('Measurement finished and data saved to ' + self.data_saver.filepath)
     
-
     def save_config(self):
         #This function saves the current settings to a config file
         filename, ok = QFileDialog.getSaveFileName(self.ui, 'Save Config', os.path.join(os.path.dirname(__file__), 'config'), 'Config Files (*.json)')
@@ -488,7 +499,24 @@ class Functionality:
         self.config_manager.apply_config(config)
         self.ui.canvas.restart_plot()
         self.ui.canvas.update_plot()
-        
+
+    def write_parameters(self, parameters):
+        filepath = self.ui.folder_path.text()
+        filename = self.ui.filename.text()
+        file = os.path.join(filepath, filename, '.json')
+        devices_dict = {
+            'SMU' : self.ui.device_manager.smu_devices,
+            'Voltmeters': self.ui.device_manager.voltmeter_devices,
+            'Resistancemeters': self.ui.device_manager.reistancemeter_devices,
+            'lowV Powersupplies': self.ui.device_manager.lowV_devices,
+            'Capacitancemeters': self.ui.device_manager.capacitancemeter_devices,
+        }
+        with open(file, 'w') as f:
+            f.dump(devices_dict, f, indent = 4)
+            f.dump(parameters, f, indent = 4)
+
+
+
 class Device_Handler:   #Class that handles the devices and their IDs
     def __init__(self, rm):
         self.rm = rm
@@ -498,6 +526,7 @@ class Device_Handler:   #Class that handles the devices and their IDs
         self.voltmeter_devices = [] # List of used voltmeters
         self.resistancemeter_devices = [] # List of used volmeters used to measure resistance
         self.lowV_devices = [] # List of used low voltage power supplies
+        self.capacitancemeter_devices = [] # List of used capacitance meters
         self.used_ids = [] # List of the ids of used devices
 
     def find_devices(self):
@@ -543,6 +572,8 @@ class Device_Handler:   #Class that handles the devices and their IDs
                 self.device_candidates.append([port, id, 'Rhode&Schwarz NGE103B'])
             elif 'HMP4040' in id: 
                 self.device_candidates.append([port, id, 'HAMEG HMP4040'])
+            elif 'HM8118' in id:
+                self.device_candidates.append([port, id, 'HAMEG HM8118'])
             else:
                 self.device_candidates.append([port, id, 'Uncharacterized'])
             device.close()
@@ -553,68 +584,4 @@ class Device_Handler:   #Class that handles the devices and their IDs
         self.device_candidates = []
 
     
-class Sweep: #class that can create voltage sweeps, for now only linear sweeps are implemented
-    def __init__(self):
-        pass
-    
-    def linear_sweep(self, start, stop, steps, number_of_measurements): 
-        #This function creates a linear sweep from start to stop with the given number of steps
-        if start == stop:
-            raise ValueError('Start and stop voltage are the same, no sweep possible')
-        if start > stop:
-            if steps > 0:
-                raise ValueError('Steps must be negative if start is greater than stop')
-            if abs(stop-start) < abs(steps):
-                raise ValueError('Steps are too big for the given range')
-        else:
-            if steps < 0:
-                raise ValueError('Steps must be positive if start is less than stop')
-            if abs(stop-start) < abs(steps):
-                raise ValueError('Steps are too big for the given range')
-        if steps == 0:
-            raise ValueError('Steps must not be zero')
-        if number_of_measurements <= 0:
-            raise ValueError('Number of measurements must be greater than 0')
-        
-
-        voltages = np.arange(start, stop+steps, steps)
-        n = np.ones(len(voltages))*number_of_measurements
-        return np.column_stack([voltages, n])
-    
-    def read_sweep(self, file):
-        return np.loadtxt(file, delimiter = ' ', usecols=[0, 1]) #reads a csv file with the sweep data
-    
-    def read_frequency_sweep(self, file):
-        voltages, n = np.loadtxt(file, delimiter= ' ', unpack= True, usecols = [0, 1])
-        frequencies = np.loadtxt(file, delimiter= ' ', unpack= True, usecols= [2])
-        return np.array(np.column_stack(voltages, n), frequencies) 
-
-    def frequency_sweep_log(self, startV, stopV, stepV, number_of_measurements, startF, stopF, number_of_frequencies):
-        #Creates an array for voltage and frequency sweeps [voltage, [frequencies at this voltage step]]
-        #For the frequency sweep, the frequencies are logarithmically spaced, and for all voltages the same frequencies are used
-        #If you use different frequencies for each voltage, you need to create the array manually
-        if startV == stopV:
-            raise ValueError('Start and stop voltage are the same, no sweep possible')
-        if startV > stopV:
-            if stepV > 0:
-                raise ValueError('Steps must be negative if start is greater than stop')
-            if abs(stopV-startV) < abs(stepV):
-                raise ValueError('Steps are too big for the given range')
-        else:
-            if stepV < 0:
-                raise ValueError('Steps must be positive if start is less than stop')
-            if abs(stopV-startV) < abs(stepV):
-                raise ValueError('Steps are too big for the given range')
-        if stepV == 0:
-            raise ValueError('Steps must not be zero')
-        if startF == stopF:
-            raise ValueError('Start and stop frequency are the same, no sweep possible')
-        if startF > stopF:
-            raise ValueError('Start frequency must be less than stop frequency')
-        
-        voltages = np.arange(startV, stopV+stepV, stepV)
-        n = np.ones(len(voltages))*number_of_measurements
-        frequencies = np.logspace(np.log10(startF), np.log10(stopF), number_of_frequencies, endpoint=True)
-        
-        sweep = np.array([np.column_stack(voltages, n), frequencies])
 
