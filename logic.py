@@ -262,49 +262,8 @@ class Functionality:
         if oldLayout is not None:
             QWidget().setLayout(oldLayout)  # Clear the old layout
         self.ui.measurement_settings.setLayout(layout) #Set the new layout
-        self.config_manager.apply_config(self.config_manager.assemble_config()) #Apply the config to the new layout
-
-    def select_canvas_file(self):
-        #This function opens a file dialog to select a file for the canvas
-        #It sets the file path to the selected file
-        file, _ = QFileDialog.getOpenFileName(self.ui, 'Select a file')
-        if file:
-            self.ui.select_canvas_file.setText(file)
-
-    def load_canvas_file(self):
-        #This function loads the data from the selected file into the canvas
-        self.ui.canvas.load_data(self.ui.select_canvas_file.text())
-
-    def enable_custom_limits(self):
-        #This function enables or disables the custom limits for the canvas
-        #It takes care of the UI while the actual changes to the plot are handeled in the Plotting.py file
-        self.ui.custom_limits = self.ui.canvas_custom_limits.isChecked()
-        if self.ui.custom_limits:
-            self.ui.canvas_upper_x_limit.setEnabled(True)
-            self.ui.canvas_lower_x_limit.setEnabled(True)
-            self.ui.canvas_upper_y_limit.setEnabled(True)
-            self.ui.canvas_lower_y_limit.setEnabled(True)
-            self.ui.canvas.custom_limits = True
-        else:
-            self.ui.canvas_upper_x_limit.setEnabled(False)
-            self.ui.canvas_lower_x_limit.setEnabled(False)
-            self.ui.canvas_upper_y_limit.setEnabled(False)
-            self.ui.canvas_lower_y_limit.setEnabled(False)
-            self.ui.canvas.custom_limits = False
-        
-        self.ui.canvas.xlim, self.ui.canvas.ylim = [self.ui.canvas_lower_x_limit.value(), self.ui.canvas_upper_x_limit.value()], [self.ui.canvas_lower_y_limit.value(), self.ui.canvas_upper_y_limit.value()]
-        self.ui.canvas.set_custom_limits()
-
-    def set_custom_limits(self):
-        #This function sets the custom limits for the canvas
-        self.ui.custom_limits = self.ui.canvas_custom_limits.isChecked()
-        if self.ui.custom_limits:
-            self.ui.canvas.custom_limits = True
-            self.ui.canvas.xlim, self.ui.canvas.ylim = [self.ui.canvas_lower_x_limit.value(), self.ui.canvas_upper_x_limit.value()], [self.ui.canvas_lower_y_limit.value(), self.ui.canvas_upper_y_limit.value()]
-            self.ui.canvas.set_custom_limits()
-        else:
-            self.ui.canvas.custom_limits = False
-            self.ui.canvas.set_custom_limits(None, None)
+        config = self.config_manager.assemble_config() #Assemble the config from the UI
+        self.config_manager.apply_config(config) #Apply the config to the new layout
 
     def K2200_warning(self):
         #This function shows a warning message if the K2200 is selected as a device
@@ -516,10 +475,7 @@ class Functionality:
             return
         if not filename.endswith('.json'):
             filename += '.json'
-        if os.path.exists(filename):
-            reply = QMessageBox.question(self.ui, 'Overwrite Config', 'The config file already exists. Do you want to overwrite it?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if reply == QMessageBox.No:
-                return
+        
         config = self.config_manager.assemble_config()
         self.config_manager.save_config(config, filename)
         

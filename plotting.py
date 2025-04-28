@@ -1,6 +1,8 @@
 #In this file all the stuff related to the plotting of the canvas is handled. 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtCore import Qt
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -139,3 +141,22 @@ class PlotCanvas(FigureCanvas):
         if self.ylim is not None:
             self.ax.set_ylim(self.ylim[0], self.ylim[1])
         self.draw()
+
+
+
+class Canvas_functions:
+    def __init__(self, ui):
+        self.ui = ui
+
+    def select_canvas_file(self):
+        #This function opens a file dialog to select a file for the canvas
+        #It sets the file path to the selected file
+        file, _ = QFileDialog.getOpenFileName(self.ui, 'Select a file')
+        if file:
+            self.ui.select_canvas_file.setText(file)
+
+    def load_canvas_file(self):
+        #This function loads the data from the selected file into the canvas
+        self.ui.canvas.load_data(self.ui.select_canvas_file.text())
+
+   

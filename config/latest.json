@@ -27,5 +27,6 @@
         "constant_voltage": 0,
         "time_between_measurements": 0,
         "limitI": 0
-    }
+    },
+    "darkmode": false
 }

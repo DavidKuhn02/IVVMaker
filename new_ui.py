@@ -112,6 +112,8 @@ class Ui_MainWindow(QWidget):
         self.measurement_settings_box.setMaximumWidth(600)
         self.measurement_settings_layout = QGridLayout()
         self.measurement_settings_layout.setAlignment(QtCore.Qt.AlignTop)
+        self.measurement_settings_layout.setAlignment(QtCore.Qt.AlignLeft)
+        self.measurement_settings_layout.setColumnStretch(0, 1)
 
         self.measurement_type_comboBox = QComboBox()  #Select Measurement Type ComboBox
         self.measurement_type_comboBox.addItems(['IV', 'Constant Voltage', 'CV'])
@@ -124,6 +126,8 @@ class Ui_MainWindow(QWidget):
         self.logic.change_measurement_type(self.measurement_type) #Calls the function to change the measurement type
         self.measurement_settings_scrollArea = QScrollArea()
         self.measurement_settings_scrollArea.setWidget(self.measurement_settings)
+        self.measurement_settings_scrollArea.setWidgetResizable(True)
+        self.measurement_settings_scrollArea.setMinimumSize(300, 300) #Sets the minimum size of the scroll area
         self.measurement_settings_layout.addWidget(self.measurement_settings_scrollArea, 1, 0, 1, 2) #Add the widget to the layout
 
         self.measurement_settings_box.setLayout(self.measurement_settings_layout)  #Add the layout to the group box
@@ -159,8 +163,6 @@ class Ui_MainWindow(QWidget):
         self.savefile_settings_box.setLayout(self.savefile_settings_layout)
         self.layout.addWidget(self.savefile_settings_box, 5, 0, 1, 1) #Add the group box to the layout
 
-        
-        
         self.canvas = plotting.PlotCanvas(self)     #Initialize the plot canvas
         self.layout.addWidget(self.canvas, 0, 1, 5, 3)
 
@@ -168,6 +170,9 @@ class Ui_MainWindow(QWidget):
         self.canvas_settings_layout = QGridLayout()
         
         self.canvas_settings.setLayout(self.canvas_settings_layout)  #Add the layout to the group box
+
+        self.canvas_settings_UI()  #Call the function to create the canvas settings UI
+        self.canvas_settings_layout.setAlignment(QtCore.Qt.AlignTop)
 
         self.start_button = QPushButton('Start Measurement') #Button to start the measurement 
         self.start_button.clicked.connect(self.logic.start_measurement)
@@ -408,79 +413,8 @@ class Ui_MainWindow(QWidget):
         return layout
     
     def canvas_settings_UI(self):
-        self.canvas_settings_layout.setAlignment(QtCore.Qt.AlignTop)
-        self.layout.addWidget(self.canvas_settings, 5, 1, 1, 3)
-
-        self.canvas_custom_limits = QCheckBox()    #Custom Limits CheckBox and Label
-        self.canvas_custom_limits.setChecked(False)
-        self.canvas_settings_layout.addWidget(self.canvas_custom_limits, 0, 1)
-        self.canvas_custom_limits.stateChanged.connect(self.logic.enable_custom_limits)
-        self.canvas_settings_layout.addWidget(QLabel('Use custom limits in the plot'), 0, 0)
-
-        self.canvas_clear_button = QPushButton('Clear plot')    #Clear Plot Button (Clears the plot and old data, if meausrement is running, the live data is not cleared)
-        self.canvas_clear_button.clicked.connect(self.canvas.clear_plot)
-        self.canvas_settings_layout.addWidget(self.canvas_clear_button, 0, 5)
-
-        self.canvas_xlimits_label = QLabel('Voltage limits')      #Limits of the x axis, default is voltage, switches to seconds if constant voltage is enabled
-        self.canvas_settings_layout.addWidget(self.canvas_xlimits_label, 1, 0)
-        self.canvas_lower_x_limit = QDoubleSpinBox()
-        self.canvas_lower_x_limit.setRange(-1100, 1100)
-        self.canvas_lower_x_limit.setDecimals(2)
-        self.canvas_lower_x_limit.setSuffix(' V')
-        self.canvas_lower_x_limit.setValue(self.startV.value())
-        self.canvas_settings_layout.addWidget(self.canvas_lower_x_limit, 1, 1)
-        self.canvas_settings_layout.addWidget(QLabel('to'), 1, 2)
-        self.canvas_upper_x_limit = QDoubleSpinBox()
-        self.canvas_upper_x_limit.setRange(-1100, 1100)
-        self.canvas_upper_x_limit.setDecimals(2)
-        self.canvas_upper_x_limit.setSuffix(' V')
-        self.canvas_upper_x_limit.setValue(self.stopV.value())
-        self.canvas_settings_layout.addWidget(self.canvas_upper_x_limit, 1, 3)
-
-        self.canvas_settings_layout.addWidget(QLabel('Current limits'), 2, 0)  #Limit for the y axis, default is current, maybe implement a second y axis for additional voltage measurements later
-        self.canvas_lower_y_limit = QDoubleSpinBox()
-        self.canvas_lower_y_limit.setRange(-1e6, 1e6)
-        self.canvas_lower_y_limit.setDecimals(2)
-        self.canvas_lower_y_limit.setSuffix(' uA')
-        self.canvas_lower_y_limit.setValue(0)
-        self.canvas_settings_layout.addWidget(self.canvas_lower_y_limit, 2, 1)
-        self.canvas_settings_layout.addWidget(QLabel('to'), 2, 2)
-        self.canvas_upper_y_limit = QDoubleSpinBox()
-        self.canvas_upper_y_limit.setRange(-1e6, 1e6)
-        self.canvas_upper_y_limit.setDecimals(2)
-        self.canvas_upper_y_limit.setSuffix(' uA')
-        self.canvas_upper_y_limit.setValue(-self.limitI.value())
-        self.canvas_settings_layout.addWidget(self.canvas_upper_y_limit, 2, 3)
-
-        self.canvas_lower_x_limit.setEnabled(False)  #Disable the limits until the user checks the box
-        self.canvas_upper_x_limit.setEnabled(False)
-        self.canvas_lower_y_limit.setEnabled(False)
-        self.canvas_upper_y_limit.setEnabled(False)
-
-        self.canvas_lower_x_limit.editingFinished.connect(self.logic.set_custom_limits)  #Connects the limits to the logic function
-        self.canvas_upper_x_limit.editingFinished.connect(self.logic.set_custom_limits)
-        self.canvas_lower_y_limit.editingFinished.connect(self.logic.set_custom_limits)
-        self.canvas_upper_y_limit.editingFinished.connect(self.logic.set_custom_limits)
-
-        self.canvas_settings_layout.addWidget(QLabel('Add a previous measurement to the plot'), 4, 0)   #Title for the option to plot old measurements 
-
-        self.canvas_keep_measurement_widget = QWidget()
-        self.canvas_keep_measurement_layout = QGridLayout()
-        self.canvas_keep_measurement = QCheckBox()   #CheckBox to keep the current measurement
-        self.canvas_keep_measurement_layout.addWidget(self.canvas_keep_measurement, 0, 1)
-        self.canvas_keep_measurement_widget.setLayout(self.canvas_keep_measurement_layout)
-        self.canvas_keep_measurement_layout.addWidget(QLabel('Keep the current measurement'), 0, 0)
-
-        self.canvas_settings_layout.addWidget(self.canvas_keep_measurement_widget, 4, 5)
+        self.canvas_settings_functions = plotting.Canvas_functions(self)  #Initialize the canvas functions
+        layout = QGridLayout()
+        layout.setAlignment(QtCore.Qt.AlignTop)
+        layout.setAlignment(QtCore.Qt.AlignLeft)
         
-        self.select_canvas_file = QLineEdit()     #Path to the file to be plotted
-        self.select_canvas_file.setPlaceholderText('Select file')
-        self.canvas_settings_layout.addWidget(self.select_canvas_file, 5, 0, 1, 4)
-
-        self.search_canvas_file = QPushButton('...') #Button to select the file to be plotted
-        self.search_canvas_file.clicked.connect(self.logic.select_canvas_file)
-        self.canvas_settings_layout.addWidget(self.search_canvas_file, 5, 4, 1, 1)
-
-        self.canvas_load_file = QPushButton('Load file') #Button to load the file to be plotted
-        self.canvas_load_file.clicked.connect(self.logic.load_canvas_file)
-        self.canvas_settings_layout.addWidget(self.canvas_load_file, 5, 5, 1, 1)
