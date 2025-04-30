@@ -4,10 +4,10 @@ import datetime
 class DataSaver:
     #This class is responsible for saving the data to a file
     #It creates the file and writes the data to it
-    def __init__(self, filepath, filename, ui, functionality, sweep, parameters = None, type = 'IV'):
+    def __init__(self, filepath, filename, ui, functionality):
         self.functionality = functionality
         self.ui = ui
-        self.sweep = sweep
+        self.create_file(filepath=filepath, filename=filename)
         
     def create_file(self, filepath, filename):  
         #This function creates the file and writes the header to it
@@ -19,7 +19,7 @@ class DataSaver:
         except FileExistsError:
             raise FileExistsError
         except Exception as e:
-            return
+            return  
     
     def write_header(self):
         #The header is created based on the devices that are connected

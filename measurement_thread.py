@@ -26,7 +26,7 @@ class MeasurementThread(QThread):
         #and sets the voltage to the start voltage
         self.running = True
         for smu in self.device_handler.smu_devices:
-            smu.set_limit(self.limit_I)
+            smu.set_limit(self.limit_I*1e-6)
             smu.enable_output(True)
             smu.clear_buffer()
         if start == 0:
@@ -65,7 +65,6 @@ class MeasurementThread(QThread):
                 break
             self.set_voltages(self.voltages[i])
             time.sleep(float(self.time_between_steps))
-
             for j in range(int(self.number_of_measurements[i])):
                 if not self.running:
                     break
@@ -146,6 +145,7 @@ class MeasurementThread(QThread):
             data.append(phase)
 
         return data
+    
     
     def set_voltages(self, voltage):
         #Funtion to set the voltage for all active SMUs

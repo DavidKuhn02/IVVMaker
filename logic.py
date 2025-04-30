@@ -8,6 +8,7 @@ import devices
 import data_handler
 import config_manager
 import numpy as np
+import json
 import os
 from datetime import datetime 
 import qdarkstyle
@@ -352,7 +353,8 @@ class Functionality:
             self.file_exists_error()
             return        
         
-        self.measurement_thread = measurement_thread.MeasurementThread() #start the measurement thread 
+        self.measurement_thread = measurement_thread.MeasurementThread(ui = self.ui, device_handler= self.ui.device_handler) #start the measurement thread 
+        self.measurement_thread.start()
         self.ui_changes_start() #Change the UI to show that the measurement is running
         if self.ui.measurement_type == 'IV':  #Start IV measurement
             self.write_parameters(self.ui.IV_settings)
@@ -375,7 +377,7 @@ class Functionality:
 
     def receive_data(self, data):
         #Function that receives the data from the measurement thread, saves the data and updates the plot
-        self.ui.canvas.update_plot(data[0], data[1], time_between_measurements=self.ui.time_between_measurements.value()) #update the plot with the new data 
+        #self.ui.canvas.update_plot(data[0], data[1], time_between_measurements=self.ui.time_between_measurements.value()) #update the plot with the new data 
         self.data_saver.write_data(data)
         
     def file_exists_error(self): #Handles the case when the file already exists
@@ -409,6 +411,7 @@ class Functionality:
                     self.abort_measurement('Measurement aborted by user.')
                     return False
             
+            
         elif type == 'CV':
             if parameters['startV'] == parameters['stopV']:
                 self.abort_measurement('Start and stop voltage are the same, please enter different values.')
@@ -437,6 +440,8 @@ class Functionality:
                 if response == QMessageBox.Cancel:
                     self.abort_measurement('Measurement aborted by user.')
                     return False
+                
+        return True
 
     def test_communication(self): #This function tests the communication with the connected devices by sending a *IDN? command and checking if the response is valid. If any of the devices fail, it will disconnect them and give a warning
         for device in self.ui.device_handler.smu_devices:
@@ -503,17 +508,17 @@ class Functionality:
     def write_parameters(self, parameters):
         filepath = self.ui.folder_path.text()
         filename = self.ui.filename.text()
-        file = os.path.join(filepath, filename, '.json')
-        devices_dict = {
-            'SMU' : self.ui.device_manager.smu_devices,
-            'Voltmeters': self.ui.device_manager.voltmeter_devices,
-            'Resistancemeters': self.ui.device_manager.reistancemeter_devices,
-            'lowV Powersupplies': self.ui.device_manager.lowV_devices,
-            'Capacitancemeters': self.ui.device_manager.capacitancemeter_devices,
-        }
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        file = os.path.join(filepath, filename+ timestamp+'.json')
+#        devices_dict = {  # Dict of the used devices, currently not working, will add later
+#            'SMU' : [str(device.return_assigned_id) for device in self.ui.device_handler.smu_devices],
+#            'Voltmeters': self.ui.device_handler.voltmeter_devices,
+#            'Resistancemeters': self.ui.device_handler.resistancemeter_devices,
+#            'lowV Powersupplies': self.ui.device_handler.lowV_devices,
+#            'Capacitancemeters': self.ui.device_handler.capacitancemeter_devices,
+#        }
         with open(file, 'w') as f:
-            f.dump(devices_dict, f, indent = 4)
-            f.dump(parameters, f, indent = 4)
+            json.dump(parameters, f, indent = 4)
 
 
 

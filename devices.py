@@ -225,7 +225,7 @@ class K2400:
         self.device.write(f':SOUR:VOLT {str(voltage)}')
 
     def measure_current(self):
-        self.clear_buffer()
+#        self.clear_buffer()
         current = float(self.device.query(':MEAS:CURR?').strip('\n'))
         return current
 
