@@ -10,153 +10,88 @@ import numpy as np
 class PlotCanvas(FigureCanvas):
     def __init__(self, parent=None):
         #Initializes the plot canvas
+        
         self.fig, self.ax = plt.subplots() #Create a figure and axis
         super().__init__(self.fig)
         self.setParent(parent)
-        self.constant_voltage = False  # True if the measurement is a constant voltage measurement, then the current is plotted against time
-        self.custom_limits = False  # True if the user has set custom limits
-        self.xlim = None  #Array of the x limits
-        self.ylim = None  #Array of the y limits
-        self.live_xdata = []  #Array of the live x data (always given by SMU0)
-        self.live_ydata = []  #Array of the live y data (always given by SMU0)
-        self.old_xdata = []   #Arrays of old data (either from file or from prev measurement)
-        self.old_ydata = []   #Arrays of arrays 
-        self.labels = []      #Array of lables of old data
-        self.old_time_between_steps = [] #Time between steps of the old data 
-        self.start_plot() #Start the plot with the default settings
+        self.ui = parent
+        self.parameters = {
+            'type': 'IV',  # Type of measurement (IV, CV, Constant Voltage)
+            'labels': ['Live Data'],
+            'y_label': 'Current [A]',
+            'x_label': 'Voltage [V]',
+            
+        }
+        self.live_x_data = []
+        self.live_y_data = []
+        self.draw_plot() #Draw the initial plot
 
-    def start_plot(self):
-        self.clear_data() #Clear the live data
-        self.clear_plot() #Clear the plot
-        self.update_plot()
-
-    def restart_plot(self):
-        self.clear_data() 
-        self.update_plot()
-
-    def update_plot(self, new_x = None , new_y = None, time_between_measurements = 1):
-        #Update the plot with new data, 
-        self.ax.clear() #Clear the plot
-        if new_x != None and new_y != None: #If new data is given, append it to the live data
-            self.live_xdata.append(float(new_x))
-            self.live_ydata.append(float(new_y))
-        if self.constant_voltage:   #If the measurement is a constant voltage measurement, plot the current against time
-            self.update_plot_live_data_constant_voltage(time_between_points=time_between_measurements)
-        else:                       #If the measurement is a IV measurement, plot the current against voltage
-            self.update_plot_live_data()
-
-    def update_plot_live_data(self):
-        #Update the plot with the live data
-        if len(self.live_ydata) != 0:
-            self.ax.plot(np.array(self.live_xdata), np.array(self.live_ydata)*1e6, label = 'Live IV Data (SMU0)', linestyle = 'none', marker = '.')  #Plot the live data
-        _, labels = self.ax.get_legend_handles_labels()
-        for i in range(len(self.old_xdata)):
-            if self.labels[i] in labels:
-                continue
-            self.ax.plot(np.array(self.old_xdata[i]), np.array(self.old_ydata[i])*1e6, label = self.labels[i], linestyle = 'none', marker = '.') #Plot the old data, which is not already plotted
-        self.ax.set_xlabel('Voltage [V]')
-        self.ax.set_ylabel('Current [uA]')
-        self.ax.set_title('Live IV data')
-        self.ax.legend()
-        self.ax.grid(True)
-        if self.custom_limits:
-            self.set_custom_limits()
-        self.draw()
-        
-    def update_plot_live_data_constant_voltage(self, time_between_points = 1):
-        #Update the plot with the live data for constant voltage measurement
-        if len(self.live_ydata) != 0:
-            self.ax.plot(np.arange(len(self.live_ydata))*time_between_points, np.array(self.live_ydata)*1e6, label = 'Live It Data (SMU0)', linestyle = 'none', marker = '.') #Plot the live data
-        _, labels = self.ax.get_legend_handles_labels()
-        for i in range(len(self.old_xdata)):
-            if self.labels[i] in labels:
-                continue
-            self.ax.plot(np.arange(len(self.old_ydata[i]))*self.old_time_between_steps[i], np.array(self.old_ydata[i])*1e6, label = self.labels[i], linestyle = 'none', marker = '.') #Plot the old data, which is not already plotted
-        self.ax.set_xlabel('Time [s]') #Change the x axis label to time
-        self.ax.set_ylabel('Current [uA]')
-        self.ax.set_title('Live It data')
+    def draw_plot(self):
+        #This function will redraw the plot with the current data
+        live_data_lines = [line for line in self.ax.lines if line.get_label() == 'Live Data']
+        for line in live_data_lines:
+            line.remove()
+        self.ax.set_title(self.parameters['type']+ ' Measurement')
+        self.ax.set_xlabel(self.parameters['x_label'])
+        self.ax.set_ylabel(self.parameters['y_label'])
+        if self.parameters['type'] == 'IV' or self.parameters['type'] == 'CV':
+            self.ax.plot(np.array(self.live_x_data), np.array(self.live_y_data), label=self.parameters['labels'][0], linestyle ='None', marker='o', color = 'tab:blue')   
+        else: 
+            self.ax.plot(np.arange(len(self.live_y_data)), np.array(self.live_y_data), label=self.parameters['labels'][0], linestyle ='None', marker='o', color = 'tab:blue')
         self.ax.grid(True)
         self.ax.legend()
         self.draw()
-
-    def clear_plot(self):
-        #This function clears the old data from the plot 
-        self.ax.clear()
-        if self.constant_voltage:
-            self.ax.set_xlabel('Time [s]')
-            self.ax.set_ylabel('Current [uA]')
-            self.ax.set_title('Live It data')
-        else:
-            self.ax.set_xlabel('Voltage [V]')
-            self.ax.set_ylabel('Current [uA]')
-            self.ax.set_title('Live IV data')
-        self.ax.legend() 
-        self.old_xdata = []
-        self.old_ydata = []
-        self.labels = []
-        self.ax.grid(True)
-        self.draw(),
-
-    def clear_data(self):
-        #Clear the live data for multiple following measurements
-        self.live_xdata = []
-        self.live_ydata = []
-
-    def load_data(self, file):
-        #Load data from a file
-        #The file should contain two columns, the first column is the x data and the second column is the y data
-        if file in self.labels:
-            return
-        try:
-            type, time_between_steps = np.loadtxt(file, max_rows = 1, dtype = str, usecols = [0, 1], delimiter=' ') #Load the first two columns of the file 
-            x, y = np.loadtxt(file, skiprows = 3, unpack = True, usecols = [0, 1])
-            print(type, time_between_steps)
-            if type == 'Time_between_points:':
-                self.old_time_between_steps.append(float(time_between_steps))
-        except FileNotFoundError:
-            print(file, ' not found')
-
-        self.old_xdata.append(x)
-        self.old_ydata.append(y)
-        self.labels.append(file)
-        self.update_plot()
     
-    def keep_data(self, label, time_between_step = 0):
-        #Keep the data from the last measurement
-        #This function is called when the measurement is stopped
-        if len(self.live_xdata) == 0:
-            return
-        self.old_xdata.append(self.live_xdata)
-        self.old_ydata.append(self.live_ydata)
-        self.labels.append(label)
-        self.old_time_between_steps.append(time_between_step)
-        self.update_plot()
-        self.clear_data()
+    def update_data(self, x_data, y_data):
+        #This function will update the data of the plot
+        self.live_x_data.append(x_data)
+        self.live_y_data.append(y_data)  # Convert to uA
+    
+    def change_plot_type(self, type):
+        #This function will change the plot type
+        self.parameters['type'] = type
+        self.parameters['labels'] = ['Live Data']
+        self.live_x_data = []  #Clear all the data 
+        self.live_y_data = []
+        self.old_x_data = []
+        self.old_y_data = []
+        if type == 'IV':
+            self.parameters['x_label'] = 'Voltage [V]'
+            self.parameters['y_label'] = 'Current [A]'
+        elif type == 'CV':
+            self.parameters['x_label'] = 'Voltage [V]'
+            self.parameters['y_label'] = 'Impedance [Ohm]'
+        elif type == 'Constant Voltage':
+            self.parameters['x_label'] = 'Number of Measurements'
+            self.parameters['y_label'] = 'Current [A]'
+        self.draw_plot()
+    
+    def clear_live_data(self):
+        #This function will clear the live data
+        self.live_x_data = []
+        self.live_y_data = []
+        self.draw_plot()
 
-    def set_custom_limits(self):
-        #Set cutom limits for the plot
-        #The limits are set by the user in the GUI
-        if self.xlim is not None:
-            self.ax.set_xlim(self.xlim[0], self.xlim[1])
-        if self.ylim is not None:
-            self.ax.set_ylim(self.ylim[0], self.ylim[1])
-        self.draw()
-
-
-
-class Canvas_functions:
-    def __init__(self, ui):
-        self.ui = ui
-
-    def select_canvas_file(self):
-        #This function opens a file dialog to select a file for the canvas
-        #It sets the file path to the selected file
-        file, _ = QFileDialog.getOpenFileName(self.ui, 'Select a file')
+    def clear_old_data(self):
+        #This function will clear the old data
+        old_data_lines = [line for line in self.ax.lines if line.get_label() != 'Live Data']
+        for line in old_data_lines:
+            line.remove()
+        self.old_x_data = []
+        self.old_y_data = []
+        self.draw_plot()
+        
+    def load_old_data(self):
+        #This function will load the old data
+        file = QFileDialog.getOpenFileName(self.ui, 'Open File', self.ui.data_path, 'CSV files (*.csv);;All files (*)')[0]
         if file:
-            self.ui.select_canvas_file.setText(file)
-
-    def load_canvas_file(self):
-        #This function loads the data from the selected file into the canvas
-        self.ui.canvas.load_data(self.ui.select_canvas_file.text())
-
-   
+            if self.parameters['type'] == 'IV':
+                self.old_x_data, self.old_y_data = np.loadtxt(file, delimiter=' ', unpack=True, skiprows=1, usecols = [1, 2])
+                self.ax.plot(np.array(self.old_x_data), np.array(self.old_y_data), label=str(file), linestyle ='None', marker='o')   
+            elif self.parameters['type'] == 'CV':
+                self.old_x_data, self.old_y_data = np.loadtxt(file, delimiter=' ', unpack=True, skiprows=1, usecols = [1, 2])
+                self.ax.plot(np.array(self.old_x_data), np.array(self.old_y_data), label=str(file), linestyle ='None', marker='o')
+            elif self.parameters['type'] == 'Constant Voltage': 
+                self.old_x_data, self.old_y_data = np.loadtxt(file, delimiter=' ', unpack=True, skiprows=1, usecols = [1, 2])
+                self.ax.plot(np.arange(len(self.old_y_data)), np.array(self.old_y_data), label=str(file), linestyle ='None', marker='o')
+            self.draw_plot()    

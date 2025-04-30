@@ -4,7 +4,7 @@
         "startV": 0.0,
         "stopV": 2.5,
         "stepV": 0.1,
-        "measurements_per_step": 5,
+        "measurements_per_step": 3,
         "time_between_measurements": 0.4,
         "time_between_steps": 0.5,
         "limitI": 100000.0,

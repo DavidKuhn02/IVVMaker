@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QApplication, QWidget, QDialog, QGridLayout, QFormLayout, QPushButton, QLabel, QMessageBox, QLineEdit, QComboBox, QScrollArea, QFrame, QVBoxLayout, QGroupBox, QSpinBox, QDoubleSpinBox, QCheckBox, QRadioButton, QSizePolicy
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from PyQt5.QtCore import QThread, pyqtSignal
 import pyvisa as visa
 import devices
@@ -19,7 +20,9 @@ class Ui_MainWindow(QWidget):
         self.rm = rm
         self.device_handler = Device_Handler(self.rm) # Initialize the device handler
         self.logic = Functionality(self)
+        self.canvas = plotting.PlotCanvas(self) # Initialize the plot canvas
         self.measurement_type = 'IV'  # Default measurement type
+        self.data_path = data_path # Default data path
         self.IV_settings = { # Dict to store the settings for the IV measurement
         'startV': 0,
         'stopV': 0,
@@ -170,16 +173,15 @@ class Ui_MainWindow(QWidget):
         self.savefile_settings_box.setLayout(self.savefile_settings_layout)
         self.layout.addWidget(self.savefile_settings_box, 5, 0, 1, 1) #Add the group box to the layout
 
-        self.canvas = plotting.PlotCanvas(self)     #Initialize the plot canvas
+            #Initialize the plot canvas
         self.layout.addWidget(self.canvas, 0, 1, 5, 3)
 
-        self.canvas_settings = QGroupBox('Plot settings')    #Create a group box for the plot settings
-        self.canvas_settings_layout = QGridLayout()
-        
-        self.canvas_settings.setLayout(self.canvas_settings_layout)  #Add the layout to the group box
+        self.toolbar = NavigationToolbar(self.canvas, self)  # Create the toolbar
+        self.layout.addWidget(self.toolbar, 5, 1, 1, 2)  # Add it below the plot
 
-        self.canvas_settings_UI()  #Call the function to create the canvas settings UI
-        self.canvas_settings_layout.setAlignment(QtCore.Qt.AlignTop)
+        self.canvas_settings = QWidget()    #Create a group box for the plot settings
+        self.canvas_settings.setLayout(self.canvas_settings_UI())  #Add the layout to the group box
+        self.layout.addWidget(self.canvas_settings, 5, 2, 1, 1) #Add the group box to the layout
 
         self.start_button = QPushButton('Start Measurement') #Button to start the measurement 
         self.start_button.clicked.connect(self.logic.start_measurement)
@@ -443,8 +445,16 @@ class Ui_MainWindow(QWidget):
         return outer_layout
     
     def canvas_settings_UI(self):
-        self.canvas_settings_functions = plotting.Canvas_functions(self)  #Initialize the canvas functions
         layout = QGridLayout()
         layout.setAlignment(QtCore.Qt.AlignTop)
         layout.setAlignment(QtCore.Qt.AlignLeft)
-        
+
+        self.clear_data_button = QPushButton('Clear Old Data') #Button to clear the live data
+        self.clear_data_button.clicked.connect(self.canvas.clear_old_data)
+        layout.addWidget(self.clear_data_button, 0, 0)
+
+        self.load_data_button = QPushButton('Load Old Data') #Button to load data from a file        
+        self.load_data_button.clicked.connect(self.canvas.load_old_data)
+        layout.addWidget(self.load_data_button, 0, 1)
+
+        return layout

@@ -267,6 +267,7 @@ class Functionality:
         self.ui.measurement_settings.setLayout(layout) #Set the new layout
         config = self.config_manager.assemble_config() #Assemble the config from the UI
         self.config_manager.apply_config(config) #Apply the config to the new layout
+        self.ui.canvas.change_plot_type(type) #Change the plot type to the new measurement type
 
     def K2200_warning(self):
         #This function shows a warning message if the K2200 is selected as a device
@@ -354,32 +355,35 @@ class Functionality:
             return        
         
         self.measurement_thread = measurement_thread.MeasurementThread(ui = self.ui, device_handler= self.ui.device_handler) #start the measurement thread 
-        self.measurement_thread.start()
+        self.measurement_thread.data_signal.connect(self.receive_data)  #Handles the data signal from the measurement thread
+        self.measurement_thread.finished_signal.connect(self.finish_measurement) # Handles the finished signal from the measurement thread
+        self.ui.canvas.clear_live_data() #Clear the live data from the plot
         self.ui_changes_start() #Change the UI to show that the measurement is running
         if self.ui.measurement_type == 'IV':  #Start IV measurement
             self.write_parameters(self.ui.IV_settings)
             if not self.safety_check(parameters=self.ui.IV_settings, type = 'IV'): #Perform various checks before starting the measurement
                 return
-            self.measurement_thread.IV_signal.emit(self.ui.IV_settings)
+            self.measurement_thread.set_parameters('IV', self.ui.IV_settings)
         elif self.ui.measurement_type == 'CV': #Start CV measurement
             self.write_parameters(self.ui.CV_settings)
             if not self.safety_check(parameters=self.ui.CV_settings, type = 'CV'): #Perform various checks before starting the measurement
                 return
-            self.measurement_thread.CV_signal.emit(self.ui.CV_settings)
+            self.measurement_thread.set_parameters('CV', self.ui.CV_settings)
         elif self.ui.measurement_type == 'Constant Voltage': #Start Constant Voltage measurement
             self.write_parameters(self.ui.ConstantV_settings)
             if not self.safety_check(parameters=self.ui.ConstantV_settings, type = 'Constant Voltage'): #Perform various checks before starting the measurement
                 return
-            self.measurement_thread.ConstantVoltage_signal.emit(self.ui.ConstantV_settings)    
-            
-        self.measurement_thread.data_signal.connect(self.receive_data)  #Handles the data signal from the measurement thread
-        self.measurement_thread.finished_signal.connect(self.finish_measurement) # Handles the finished signal from the measurement thread
-
+            self.measurement_thread.set_parameters('Constant Voltage', self.ui.ConstantV_settings)    
+        
+        self.measurement_thread.start() #Start the measurement thread
+        
     def receive_data(self, data):
         #Function that receives the data from the measurement thread, saves the data and updates the plot
         #self.ui.canvas.update_plot(data[0], data[1], time_between_measurements=self.ui.time_between_measurements.value()) #update the plot with the new data 
         self.data_saver.write_data(data)
-        
+        self.ui.canvas.update_data(data[1], data[2]) #update the plot with the new data
+        self.ui.canvas.draw_plot() #draw the plot with the new data
+
     def file_exists_error(self): #Handles the case when the file already exists
         self.ui.abort_button.setEnabled(False)
         warning = QMessageBox.warning(self.ui, 'Warning', 'Afile with this name already exists, please enter a different filename.', QMessageBox.Ok, QMessageBox.Ok)
@@ -509,7 +513,7 @@ class Functionality:
         filepath = self.ui.folder_path.text()
         filename = self.ui.filename.text()
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        file = os.path.join(filepath, filename+ timestamp+'.json')
+        file = os.path.join(filepath, filename+ timestamp + 'Settings' + '.json')
 #        devices_dict = {  # Dict of the used devices, currently not working, will add later
 #            'SMU' : [str(device.return_assigned_id) for device in self.ui.device_handler.smu_devices],
 #            'Voltmeters': self.ui.device_handler.voltmeter_devices,

@@ -25,11 +25,7 @@ class DataSaver:
         #The header is created based on the devices that are connected
         #It provides information on the different channels which are measured
         self.header = [] 
-        if self.ui.fixed_voltage_checkBox.isChecked():
-            self.constant_header(self.ui.time_between_measurements.value())
-        else:
-            self.sweep_header(len(self.sweep[0]))
-
+        self.header.append(f'Target[V]')
         for i in range(len(self.ui.device_handler.smu_devices)):
             self.header.append(f'Voltage_SMU_{i}[V]')
             self.header.append(f'Current_SMU_{i}[A]')
@@ -46,7 +42,7 @@ class DataSaver:
         for i in range(len(self.ui.device_handler.capacitancemeter_devices)):
             self.header.append(f'Impedance_capacitancemeter_device{i}')
             self.header.append(f'Phase_capacitancemeter_device{i}')
-        self.file.write(''.join(self.header)+ '\n') 
+        self.file.write(' '.join(self.header)+ '\n') 
         
 
     def write_data(self, data):
