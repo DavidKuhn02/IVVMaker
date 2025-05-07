@@ -121,7 +121,7 @@ class Ui_MainWindow(QWidget):
         self.measurement_settings_layout.setColumnStretch(0, 1)
 
         self.measurement_type_comboBox = QComboBox()  #Select Measurement Type ComboBox
-        self.measurement_type_comboBox.addItems(['IV', 'Constant Voltage', 'CV'])
+        self.measurement_type_comboBox.addItems(['IV', 'Constant Voltage']) #Removed the optiopn to select CV measurement, as this does not work atm
         self.measurement_type_comboBox.setToolTip('Select the measurement type')   
         self.measurement_type_comboBox.setCurrentText(self.measurement_type)
         self.measurement_type_comboBox.currentTextChanged.connect(lambda: self.logic.change_measurement_type(self.measurement_type_comboBox.currentText())) #Connects the ComboBox to the logic function
