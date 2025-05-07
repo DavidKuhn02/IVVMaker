@@ -28,8 +28,6 @@ class Functionality:
         for device in self.ui.device_handler.smu_devices:
             device.close()
         for device in self.ui.device_handler.voltmeter_devices:
-            device.close()
-        for device in self.ui.device_handler.resistancemeter_devices:
             device.close()  
         for device in self.ui.device_handler.lowV_devices:
             device.close()
@@ -152,11 +150,9 @@ class Functionality:
         device_widget = QFrame()
         device_widget.setFrameShape(QFrame.Box)
         device_layout = QGridLayout()
-        device_widget.setLayout(device_layout) # 
-        if 'Keithley K2611 SMU' in candidate[2] or 'Keithley K2200 SMU' in candidate[2] or 'Keithley K2400 SMU' in candidate[2]: 
-            device_layout.addWidget(QLabel(f'SMU {len(self.ui.device_handler.smu_devices)-1}: ' + candidate[1]) , 0, 0, 1, 2) #Add the naem from the savefile to the layout
-        else: 
-            device_layout.addWidget(QLabel(candidate[1]), 0, 0, 1, 2)  #Add the ID to the Layout
+        device_widget.setLayout(device_layout) 
+        
+        device_layout.addWidget(QLabel(candidate[1]), 0, 0, 1, 3)  #Add the ID to the Layout
     
         reset_button = QPushButton('Reset')
         reset_button.clicked.connect(lambda : self.reset_device(device))
@@ -167,29 +163,26 @@ class Functionality:
         close_button = QPushButton('Remove')
         close_button.clicked.connect(lambda : self.remove_device(device, candidate[1], device_widget))
         device_layout.addWidget(close_button, 1, 2)
-        if candidate[2] == 'Keithley K2000 Voltmeter': #For the Keithley K2000 Voltmeter, add a checkbox to select if the device should be used as a voltmeter or resistancemeter, as both options are available
-            takeV = QRadioButton('Take Voltage')
-            takeR = QRadioButton('Take Resistance')
-            takeV.setChecked(True)
-            takeR.setChecked(False)
-            takeV.clicked.connect(lambda : self.switch_voltmeter_resistancemeter(device=device, statusV=takeV.isChecked()))
-            takeR.clicked.connect(lambda : self.switch_voltmeter_resistancemeter(device=device, statusV=takeV.isChecked()))
-            device_layout.addWidget(takeV, 2, 0)
-            device_layout.addWidget(takeR, 2, 1)  
-        
+        if candidate[2] == 'Keithley K2000 Voltmeter':  # Add the pop up window to allow for advanced settings for the Keithley K2200 SMUs
+            advanced_settings = QPushButton('Advanced Settings')
+            advanced_settings.clicked.connect(lambda : self.open_parameter_dialog(device, candidate[1], candidate[2]))
+            device_layout.addWidget(advanced_settings, 2, 0, 1, 3)
         if candidate[2] == 'Keithley K2400 SMU':  # Add the pop up window to allow for advanced settings for the Keithley K2400 SMUs
             advanced_settings = QPushButton('Advanced Settings')
-            device_settings = {}
-            advanced_settings.clicked.connect(lambda : self.open_parameter_dialog(device, candidate[1]))
-            device_layout.addWidget(advanced_settings, 2, 1, 1, 2)
+            advanced_settings.clicked.connect(lambda : self.open_parameter_dialog(device, candidate[1], candidate[2]))
+            device_layout.addWidget(advanced_settings, 2, 0, 1, 3)
         
         return device_widget
 
-    def open_parameter_dialog(self, device, id):
+    def open_parameter_dialog(self, device, id, type):
         #This function opens the parameter dialog for the device
         #It is used to set the parameters for the device, like voltage range, current range, etc.
-        self.parameter_dialog = parameter_dialog.ParameterDiaglog_K2400(device, id, self.ui.rm)
-        self.parameter_dialog.show()
+        if type == 'Keithley K2000 Voltmeter':
+            self.parameter_dialog = parameter_dialog.ParameterDialog_K2000(device, id, self.ui.rm)
+            self.parameter_dialog.show()
+        if type == 'Keithley K2400 SMU':
+            self.parameter_dialog = parameter_dialog.ParameterDiaglog_K2400(device, id, self.ui.rm)
+            self.parameter_dialog.show()
     
     def reset_device(self, device): 
         #Function for the device widget to reset the device
@@ -220,32 +213,12 @@ class Functionality:
             self.ui.device_handler.smu_devices.remove(device)
         if device in self.ui.device_handler.voltmeter_devices:
             self.ui.device_handler.voltmeter_devices.remove(device)
-        if device in self.ui.device_handler.resistancemeter_devices:
-            self.ui.device_handler.resistancemeter_devices.remove(device)
         if device in self.ui.device_handler.lowV_devices:
             self.ui.device_handler.lowV_devices.remove(device)
         if device in self.ui.device_handler.capacitancemeter_devices:
             self.ui.device_handler.capacitancemeter_devices.remove(device)
 
         device.close()
-    
-    def switch_voltmeter_resistancemeter(self, device, statusV):
-        #Function for the device widget to switch the device between voltmeter and resistancemeter mode
-        #This is only implemented for the Keithley K2000 Voltmeter, as this device can be used in both modes
-        if statusV:
-            if device not in self.ui.device_handler.voltmeter_devices:
-                self.ui.device_handler.voltmeter_devices.append(device)
-            
-            if device in self.ui.device_handler.resistancemeter_devices:
-                self.ui.device_handler.resistancemeter_devices.remove(device)
-        else:
-            if device not in self.ui.device_handler.resistancemeter_devices:
-                self.ui.device_handler.resistancemeter_devices.append(device)
-            if device in self.ui.device_handler.voltmeter_devices:
-                self.ui.device_handler.voltmeter_devices.remove(device)
-
-        print(self.ui.device_handler.voltmeter_devices)
-        print(self.ui.device_handler.resistancemeter_devices)
      
     def enable_custom_sweep(self):
         #This function enables or disables the custom sweep mode 
@@ -411,6 +384,8 @@ class Functionality:
             self.data_saver.write_data(data)
             self.ui.canvas.update_data(data[1], data[2]) #update the plot with the new data
             self.ui.canvas.draw_plot() #draw the plot with the new data
+            self.ui.live_current_data.setText(f'{data[2]*1e9:.3f} nA')
+            self.ui.live_voltage_data.setText(f'{data[1]:.3f} V')
 
     def file_exists_error(self): #Handles the case when the file already exists
         self.ui.abort_button.setEnabled(False)
@@ -492,12 +467,6 @@ class Functionality:
             except:
                 self.abort_measurement(f'Communication with {device.return_assigned_id()} failed. Please reconnect this device and try again.')
                 return
-        for device in self.ui.device_handler.resistancemeter_devices:
-            try:
-                device.return_id()
-            except:
-                self.abort_measurement(f'Communication with {device.return_assigned_id()} failed. Please reconnect this device and try again.')
-                return
         for device in self.ui.device_handler.lowV_devices:
             try:
                 device.return_id()
@@ -518,7 +487,6 @@ class Functionality:
     def finish_measurement(self): #Function that is called when the measurement is finished ordinally 
         self.ui_changes_stop()
         self.data_saver.close()
- #       print('Measurement finished and data saved to ' + self.data_saver.filepath) #debug message             
     
     def save_config(self):
         #This function saves the current settings to a config file
@@ -542,19 +510,25 @@ class Functionality:
         self.ui.canvas.update_plot()
 
     def write_parameters(self, parameters):
+    
         filepath = self.ui.folder_path.text()
         filename = self.ui.filename.text()
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         file = os.path.join(filepath, filename+ timestamp + 'Settings' + '.json')
-#        devices_dict = {  # Dict of the used devices, currently not working, will add later
-#            'SMU' : [str(device.return_assigned_id) for device in self.ui.device_handler.smu_devices],
-#            'Voltmeters': self.ui.device_handler.voltmeter_devices,
-#            'Resistancemeters': self.ui.device_handler.resistancemeter_devices,
-#            'lowV Powersupplies': self.ui.device_handler.lowV_devices,
-#            'Capacitancemeters': self.ui.device_handler.capacitancemeter_devices,
-#        }
+        device_settings = {}
+        for device in self.ui.device_handler.smu_devices:
+            device_settings[device.return_assigned_id()] = device.settings
+        for device in self.ui.device_handler.voltmeter_devices:
+            device_settings[device.return_assigned_id()] = device.settings
+
+        settings = {
+            'measurement_type': self.ui.measurement_type,
+            'parameters': parameters,
+            'device_settings': device_settings
+        }
+
         with open(file, 'w') as f:
-            json.dump(parameters, f, indent = 4)
+            json.dump(settings, f, indent = 4)
 
 class Device_Handler:   #Class that handles the devices and their IDs
     def __init__(self, rm):
@@ -563,7 +537,6 @@ class Device_Handler:   #Class that handles the devices and their IDs
         self.device_candidates = [] # List of device candidates, contains [port, id, type] 
         self.smu_devices = [] # List of used SMUs
         self.voltmeter_devices = [] # List of used voltmeters
-        self.resistancemeter_devices = [] # List of used volmeters used to measure resistance
         self.lowV_devices = [] # List of used low voltage power supplies
         self.capacitancemeter_devices = [] # List of used capacitance meters
         self.used_ids = [] # List of the ids of used devices
@@ -585,13 +558,13 @@ class Device_Handler:   #Class that handles the devices and their IDs
             device.baude_rate = 9600 # Set the baud rate to 9600 (default for most devices)
             device.timeout = 500
             try:
-                id = device.query('*IDN?') # Query the identification string of the device
+                id = device.query('*IDN?').strip('').strip('') # Query the identification string of the device
                 print(port, id)
             except:
                 device.write_termination = '\r' # Change the termination characters to "\r"
                 device.read_termination = '\r'
                 try:
-                    id = device.query('*IDN?')
+                    id = device.query('*IDN?').strip('').strip('') #Try again if the device is not responding with "\n" terminations  
                 except:
                     print('Could not get ID from', port) #Debug message
                     continue

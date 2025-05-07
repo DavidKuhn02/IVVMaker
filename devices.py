@@ -66,9 +66,22 @@ class K2000: # K2000 Voltmeter (able to measure Voltage/Resistance)
         self.device = rm.open_resource(port)
         self.port = port
         self.assigned_id = id
+        self.settings = {  #Standard settings for the Keithley 2000 (loaded when the device is connected)
+            'measurement_type': 'VOLD:DC',
+            'voltage_range': 'Auto',
+            'current_range': 'Auto',
+            'resistance_range': 'Auto',
+            'use_filter': False,
+            'filter_num': 10,
+            'filter_type': 'Moving Average',
+            }
+        self.type = 'VOLT:DC'   # Sets the default measurement type to DC Voltage
+        self.set_measurement_type(self.type)
         self.reset()
+        self.clear_buffer()
+
     def reset(self):
-        self.device.write('RST*')
+        self.device.write('*RST')
 
     def clear_buffer(self):
         self.device.write('*CLS')
@@ -77,7 +90,7 @@ class K2000: # K2000 Voltmeter (able to measure Voltage/Resistance)
         return self.port
 
     def return_id(self):
-        return self.device.query('*IDN?')
+        return self.device.query('*IDN?').strip('').strip('')
     
     def return_assigned_id(self):
         return self.assigned_id
@@ -85,16 +98,47 @@ class K2000: # K2000 Voltmeter (able to measure Voltage/Resistance)
     def close(self):
         self.device.close()
 
-    def measure_voltage(self):
-        self.device.write('SENS:FUNC "VOLT:DC"')
-        voltage = self.device.query('READ?')
-        return voltage
+    def measure(self):
+        return self.device.query('READ?').strip('').strip('').strip('\n').strip()
     
-    def measure_resistance(self):
-        self.device.write('SENS:FUNC "RES"')
-        resistance = self.device.query('READ?')
-        return resistance
-    
+    def set_measurement_type(self, type):
+        self.type = type
+        self.device.write('SENS:FUNC "{}"'.format(type))
+
+    def update_voltage_range(self, range):
+        if range == 'AUTO':
+            self.device.write('SENS:VOLT:DC:RANG:AUTO ON')
+        else:
+            self.device.write('SENS:VOLT:DC:RANG:AUTO OFF')
+            self.device.write(f'SENS:VOLT:DC:RANG {range}')
+
+    def update_current_range(self, range):
+        if range == 'AUTO':
+            self.device.write('SENS:CURR:DC:RANG:AUTO ON')
+        else:
+            self.device.write('SENS:CURR:DC:RANG:AUTO OFF')
+            self.device.write(f'SENS:CURR:DC:RANG {range}')
+
+    def update_resistance_range(self, range):
+        if range == 'AUTO':
+            self.device.write('SENS:RES:RANG:AUTO ON')
+        else:
+            self.device.write('SENS:RES:RANG:AUTO OFF')
+            self.device.write(f'SENS:RES:RANG {range}')
+ 
+    def update_filter(self, filter, filter_type, filter_num):
+        
+        if filter:
+            self.device.write(f'SENS:{self.type}:AVER:STAT ON')
+        else:
+            self.device.write(f'SENS:{self.type}:AVER:STAT OFF')
+        self.device.write(f'SENS:{self.type}:AVER:COUNT {str(filter_num)}')
+        if filter_type == 'Moving Average':
+            self.device.write(f'SENS:{self.type}:AVER:TCON MOV')
+        elif filter_type == 'Repeat Average':
+            self.device.write(f'SENS:{self.type}:AVER:TCON REP')
+        
+
 class K2200:
     def __init__(self, port, id, rm):
         self.device = rm.open_resource(port)
@@ -104,7 +148,7 @@ class K2200:
         self.clear_buffer()
 
     def reset(self):
-        self.device.write('RST*')
+        self.device.write('*RST')
 
     def clear_buffer(self):
         self.device.write('*CLS')
@@ -146,7 +190,16 @@ class K2400:
         self.device = rm.open_resource(port)
         self.port = port
         self.assigned_id = id
-        self.settings = {}
+        self.settings = { #Standard settings for the Keithley 2400 (loaded when the device is connected)
+            'voltage_range': 'Auto',
+            'current_range': 'Auto',
+            'nplc': 1,
+            'high_capacitance': False,
+            'use_filter': False,
+            'filter_num': 10,
+            'filter_type': 'Moving Average',
+            'auto_zero': True,
+        }
         self.reset()
         self.clear_buffer()
         self.device.write(':SOUR:FUNC VOLT') # Sets Source to voltage mode (needed for IV Curves)
@@ -156,7 +209,7 @@ class K2400:
         self.device.write('*RST')
 
     def clear_buffer(self):
-#        self.device.write('*CLS')
+        self.device.write('*CLS')
         self.device.write('TRAC:CLE "defbuffer1"')
         self.device.write('TRAC:CLE "defbuffer2"')
 
@@ -417,7 +470,6 @@ class Hameg8118:
     def set_voltage(self, voltage):
         pass 
     
-
     def measure_frequency(self):
         return self.device.query('FREQ?')
 

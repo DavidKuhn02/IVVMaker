@@ -45,7 +45,8 @@ class PlotCanvas(FigureCanvas):
     def update_data(self, x_data, y_data):
         #This function will update the data of the plot
         self.live_x_data.append(x_data)
-        self.live_y_data.append(y_data)  # Convert to uA
+        self.live_y_data.append(y_data)  
+        
     
     def change_plot_type(self, type):
         #This function will change the plot type

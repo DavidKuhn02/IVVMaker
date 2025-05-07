@@ -149,25 +149,21 @@ class Ui_MainWindow(QWidget):
         self.savefile_settings_layout.setAlignment(QtCore.Qt.AlignTop)
 
         self.folder_path = QLineEdit()    #Folder path for the data
-        self.savefile_settings_layout.addWidget(self.folder_path, 14, 0)
+        self.savefile_settings_layout.addWidget(self.folder_path, 0, 0)
         self.folder_path.setText(data_path) #Default path is the current working directory /data
 
         self.search_folder_path = QPushButton('...')   #Button to select the folder path
         self.search_folder_path.clicked.connect(self.logic.select_folder)
-        self.savefile_settings_layout.addWidget(self.search_folder_path, 14, 1   )
+        self.savefile_settings_layout.addWidget(self.search_folder_path, 0, 1)
 
         self.filename = QLineEdit() #Filename for the datafile
         self.filename.setPlaceholderText('Enter filename')
-        self.savefile_settings_layout.addWidget(self.filename, 15, 0)
+        self.savefile_settings_layout.addWidget(self.filename, 1, 0)
 
         self.filename_suffix = QComboBox()   #Select the file suffix (default is .csv)
         self.filename_suffix.addItems(['.csv', '.dat', '.txt'])
         self.filename_suffix.setCurrentIndex(0)
-        self.savefile_settings_layout.addWidget(self.filename_suffix, 15, 1)
-
-        self.switch_darkmode = QPushButton('Switch darkmode')
-        self.switch_darkmode.clicked.connect(self.logic.switch_darkmode)
-        self.savefile_settings_layout.addWidget(self.switch_darkmode, 16, 0)
+        self.savefile_settings_layout.addWidget(self.filename_suffix, 1, 1)
 
         self.savefile_settings_box.setLayout(self.savefile_settings_layout)
         self.layout.addWidget(self.savefile_settings_box, 5, 0, 1, 1) #Add the group box to the layout
@@ -180,16 +176,16 @@ class Ui_MainWindow(QWidget):
 
         self.canvas_settings = QWidget()    #Create a group box for the plot settings
         self.canvas_settings.setLayout(self.canvas_settings_UI())  #Add the layout to the group box
-        self.layout.addWidget(self.canvas_settings, 5, 2, 2, 1) #Add the group box to the layout
+        self.layout.addWidget(self.canvas_settings, 5, 3, 2, 1) #Add the group box to the layout
 
         self.start_button = QPushButton('Start Measurement') #Button to start the measurement 
         self.start_button.clicked.connect(self.logic.start_measurement)
-        self.layout.addWidget(self.start_button, 6, 1, 2, 2)   
+        self.layout.addWidget(self.start_button, 6, 1, 3, 2)   
         self.start_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
         self.start_button.setStyleSheet("""
                                             QPushButton {
                                                 font-weight: bold;
-                                                font-size: 18px;
+                                                font-size: 22px;
                                                 border: 2px solid green;
                                                 border-radius: 5px;
                                                 padding: 5px;
@@ -198,13 +194,13 @@ class Ui_MainWindow(QWidget):
 
         self.abort_button = QPushButton('Abort Measurment') #Button to abort/stop the measurement
         self.abort_button.clicked.connect(lambda: self.logic.abort_measurement('Manually aborted'))
-        self.layout.addWidget(self.abort_button, 6, 3, 2, 1)
+        self.layout.addWidget(self.abort_button, 6, 3, 3, 1)
         self.abort_button.setEnabled(False)
         self.abort_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
         self.abort_button.setStyleSheet("""
                                             QPushButton {
                                                 font-weight: bold;
-                                                font-size: 18px;
+                                                font-size: 22px;
                                                 border: 2px solid red;
                                                 border-radius: 5px;
                                                 padding: 5px;
@@ -218,6 +214,10 @@ class Ui_MainWindow(QWidget):
         self.load_config_button = QPushButton('Load Config') #Button to load the config
         self.load_config_button.clicked.connect(self.logic.load_config)
         self.layout.addWidget(self.load_config_button, 7, 0, 1, 1)
+
+        self.switch_darkmode = QPushButton('Toggle darkmode')
+        self.switch_darkmode.clicked.connect(self.logic.switch_darkmode)
+        self.layout.addWidget(self.switch_darkmode, 8, 0, 1, 1)
 
     def closeEvent(self, event): # Ask the user if they want to quit
         # If the user wants to quit, close all devices and quit the application
@@ -454,6 +454,18 @@ class Ui_MainWindow(QWidget):
 
         self.load_data_button = QPushButton('Load Old Data') #Button to load data from a file        
         self.load_data_button.clicked.connect(self.canvas.load_old_data)
-        layout.addWidget(self.load_data_button, 0, 1)
+        layout.addWidget(self.load_data_button, 1, 0)
+
+        self.live_current_label = QLabel('Live Current:')
+        layout.addWidget(self.live_current_label, 0, 1)
+
+        self.live_voltage_label = QLabel('Live Voltage:')
+        layout.addWidget(self.live_voltage_label, 1, 1)
+
+        self.live_current_data = QLabel('0 nA')
+        layout.addWidget(self.live_current_data, 0, 2)
+
+        self.live_voltage_data = QLabel('0 V')
+        layout.addWidget(self.live_voltage_data, 1, 2)
 
         return layout

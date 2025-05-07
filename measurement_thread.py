@@ -144,13 +144,9 @@ class MeasurementThread(QThread):
             data.append(voltage_smu)
             data.append(current_smu)
         
-        for voltage_unit in self.device_handler.voltmeter_devices: #measure the additional voltages
-            voltage = voltage_unit.measure_voltage()
-            data.append(voltage)
-
-        for resistance_unit in self.device_handler.resistancemeter_devices: #measure the additional resistances
-            resistance = resistance_unit.measure_resistance()
-            data.append(resistance) 
+        for voltage_unit in self.device_handler.voltmeter_devices: #measure the quantities for each voltmeter
+            quantity = voltage_unit.measure()
+            data.append(quantity)
 
         for lowV_unit in self.device_handler.lowV_devices: #read the power drawn by the devices at the lowV power supplies (iterates over all channels)
             U, I = lowV_unit.read_output()
@@ -163,7 +159,6 @@ class MeasurementThread(QThread):
             data.append(phase)
             data.append(frequency)
         return data
-    
     
     def set_voltages(self, voltage):
         #Funtion to set the voltage for all active SMUs
@@ -188,14 +183,14 @@ class MeasurementThread(QThread):
             power_down_sequence = np.arange(voltage, 0, 10)
             for v in power_down_sequence:
                 for smu in self.device_handler.smu_devices:
-                    smu.set_voltage(0)
-                time.sleep(1)
+                    smu.set_voltage(v)
+                time.sleep(.2)
         elif voltage > 0.5:
             power_down_sequence = np.arange(voltage, 0, -10)
             for v in power_down_sequence:
                 for smu in self.device_handler.smu_devices:
-                    smu.set_voltage(0)
-                    time.sleep(1)
+                    smu.set_voltage(v)
+                    time.sleep(.2)
         self.finished_signal.emit() #emit the finished signal to the main thread
         for smu in self.device_handler.smu_devices:
             smu.set_voltage(0)
