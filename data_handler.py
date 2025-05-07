@@ -42,6 +42,7 @@ class DataSaver:
         for i in range(len(self.ui.device_handler.capacitancemeter_devices)):
             self.header.append(f'Impedance_capacitancemeter_device{i}')
             self.header.append(f'Phase_capacitancemeter_device{i}')
+            self.header.append(f'Frequency_capacitancemeter_device{i}')
         self.file.write(' '.join(self.header)+ '\n') 
         
 

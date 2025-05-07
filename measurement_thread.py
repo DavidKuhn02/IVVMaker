@@ -7,30 +7,28 @@ class MeasurementThread(QThread):
     #Class that runs the actual measurement in a seperate thread, to prevent the UI Thread from being interupted
     data_signal = pyqtSignal(list)  #signal that is emitted when data is available
     finished_signal = pyqtSignal() #signal that is emitted when the measurement is finished or aborted
-#    IV_signal = pyqtSignal(dict) #signal that is emitted by the main thread to start a IV measurement
-#    constantV_signal = pyqtSignal(dict) #signal that is by the main thread to start a constant voltage measurement
-#    CV_signal = pyqtSignal(dict) #signal that is emitted by the main thread to start a CV measurement
+    error_signal = pyqtSignal(str) #signal that is emitted when an error occurs
 
     def __init__(self, ui, device_handler):
         super().__init__()
         self.ui = ui
         self.device_handler = device_handler
-#        self.IV_signal.connect(self.run_IV_measurement) #connect the IV signal to the run_sweep function
-#        self.constantV_signal.connect(self.run_constantV_measurement) #connect the constantV signal to the run_constant function
-#       self.CV_signal.connect(self.run_cv_measurement) #connect the CV signal to the run_cv_measurement function
     
-    def run(self):
-        self.running = True
-        if self.type == 'IV':
-            self.run_IV_measurement(self.parameters)
-        elif self.type == 'Constant Voltage':
-            self.run_constantV_measurement(self.parameters)
-        elif self.type == 'CV':
-            self.run_cv_measurement(self.parameters)
-        else:
-            raise ValueError('Unknown measurement type')
-        self.abort_measurement() #call the abort function when the measurement is finished or aborted
-
+    def run(self):#
+        try:
+            self.running = True
+            if self.type == 'IV':
+                self.run_IV_measurement(self.parameters)
+            elif self.type == 'Constant Voltage':
+                self.run_constantV_measurement(self.parameters)
+            elif self.type == 'CV':
+                self.run_cv_measurement(self.parameters)
+            else:
+                raise ValueError('Unknown measurement type')
+            self.abort_measurement() #call the abort function when the measurement is finished or aborted
+        except Exception as e:
+            self.error_signal.emit(str(e))
+            
     def set_parameters(self, type, parameters):
         self.type = type
         self.parameters = parameters
@@ -43,7 +41,7 @@ class MeasurementThread(QThread):
         #and sets the voltage to the start voltage
         self.running = True
         for smu in self.device_handler.smu_devices:
-            smu.set_limit(self.limit_I*1e-6)
+            smu.set_limit(float(self.limit_I*1e-6))
             smu.enable_output(True)
             smu.clear_buffer()
         if start == 0:
@@ -127,7 +125,7 @@ class MeasurementThread(QThread):
                 if not self.running:
                     break
                 self.set_frequencies(self.frequencies[j])
-                data = self.read_data(self.voltages[i])
+                data = self.read_data(self.voltages[i], self.frequencies[j])
                 self.send_data(data)
                 QThread.msleep(self.time_between_measurements)
 
@@ -135,7 +133,7 @@ class MeasurementThread(QThread):
         return 
 
 
-    def read_data(self, voltage = None):
+    def read_data(self, voltage = None, frequency = None):
         #Function to read the data from all active devices
         data = []
         data.append(str(voltage)) #append the voltage to the data list
@@ -160,10 +158,10 @@ class MeasurementThread(QThread):
             data.append(I)
 
         for capacitance_unit in self.device_handler.capacitancemeter_devices: #measure the capacitance
-            impedance, phase, _ = capacitance_unit.read_output()
+            impedance, phase = capacitance_unit.read_output()
             data.append(impedance)
             data.append(phase)
-
+            data.append(frequency)
         return data
     
     

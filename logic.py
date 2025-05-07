@@ -21,9 +21,8 @@ class Functionality:
         self.config_manager = config_manager.config_manager(self.ui)
 
     def openEvent(self):
-        print('Loading latest config')
         config = self.config_manager.load_config(os.path.join(os.path.dirname(__file__), 'config', 'latest.json'))
-        self.config_manager.apply_config(config)
+        self.change_measurement_type(type = config['measurement_type'] ,config = config)
 
     def closeEvent(self):
         for device in self.ui.device_handler.smu_devices:
@@ -83,6 +82,9 @@ class Functionality:
             elif 'Keithley K2611 SMU' in candidate[2]:
                 device = devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
+            elif 'Keithley K6487 SMU' in candidate[2]:
+                device = devices.K6487(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                self.ui.device_handler.smu_devices.append(device)
             elif 'Keithley K2000 Voltmeter' in candidate[2]:
                 device = devices.K2000(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.voltmeter_devices.append(device)
@@ -121,6 +123,9 @@ class Functionality:
                 self.ui.device_handler.smu_devices.append(device)
             elif 'Keithley K2611 SMU' in candidate[2]:
                 device = devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
+                self.ui.device_handler.smu_devices.append(device)
+            elif 'Keithley K6487 SMU' in candidate[2]:
+                device = devices.K6487(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
             elif 'Keithley K2000 Voltmeter' in candidate[2]:
                 device = devices.K2000(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
@@ -219,6 +224,8 @@ class Functionality:
             self.ui.device_handler.resistancemeter_devices.remove(device)
         if device in self.ui.device_handler.lowV_devices:
             self.ui.device_handler.lowV_devices.remove(device)
+        if device in self.ui.device_handler.capacitancemeter_devices:
+            self.ui.device_handler.capacitancemeter_devices.remove(device)
 
         device.close()
     
@@ -252,7 +259,7 @@ class Functionality:
         if folder:
             self.ui.folder_path.setText(folder)
 
-    def change_measurement_type(self, type):
+    def change_measurement_type(self, type, config = None):
         self.update_measurement_settings()
         self.ui.measurement_type = type
         if type == 'IV':
@@ -265,7 +272,8 @@ class Functionality:
         if oldLayout is not None:
             QWidget().setLayout(oldLayout)  # Clear the old layout
         self.ui.measurement_settings.setLayout(layout) #Set the new layout
-        config = self.config_manager.assemble_config() #Assemble the config from the UI
+        if not config:
+            config = self.config_manager.assemble_config() #Assemble the config from the UI
         self.config_manager.apply_config(config) #Apply the config to the new layout
         self.ui.canvas.change_plot_type(type) #Change the plot type to the new measurement type
 
@@ -330,7 +338,7 @@ class Functionality:
 
         elif self.ui.measurement_type == 'Constant Voltage':
             try:
-                self.ui.ConstantVoltage_settings = { # Dict to store the settings for the Constant Voltage measurement
+                self.ui.constantV_settings = { # Dict to store the settings for the Constant Voltage measurement
             'constant_voltage': self.ui.constant_voltage_spinBox.value(),
             'time_between_measurements': self.ui.time_between_measurements_spinBox.value(),
             'limitI': self.ui.limitI_spinBox.value(),
@@ -339,10 +347,20 @@ class Functionality:
                 print('Error updating measurement settings', e)
 
     def start_measurement(self):
+        self.update_measurement_settings() #Update the measurement settings
+
+        if self.ui.measurement_type == 'IV':
+            parameters = self.ui.IV_settings
+        elif self.ui.measurement_type == 'CV':
+            parameters = self.ui.CV_settings
+        elif self.ui.measurement_type == 'Constant Voltage':
+            parameters = self.ui.constantV_settings
+        
+        if not self.safety_check(parameters = parameters, type = self.ui.measurement_type): #Perform various checks before starting the measurement
+                return
         #This function is responsible for actually starting the measurement
         #It takes care of the UI changes and starts the measurement thread
         #It also takes care of the data saving and the sweep creation
-        self.update_measurement_settings() #Update the measurement settings
         try:  #try to create the data saver object, if the file already exists, raise an error
             self.data_saver = data_handler.DataSaver(   #start the data save thread 
                 filepath = self.ui.folder_path.text(),
@@ -355,34 +373,44 @@ class Functionality:
             return        
         
         self.measurement_thread = measurement_thread.MeasurementThread(ui = self.ui, device_handler= self.ui.device_handler) #start the measurement thread 
-        self.measurement_thread.data_signal.connect(self.receive_data)  #Handles the data signal from the measurement thread
-        self.measurement_thread.finished_signal.connect(self.finish_measurement) # Handles the finished signal from the measurement thread
+        try:
+            self.measurement_thread.finished_signal.disconnect(self.finish_measurement)
+        except TypeError:
+            pass  # No existing connection, safe to proceed
+        
         self.ui.canvas.clear_live_data() #Clear the live data from the plot
         self.ui_changes_start() #Change the UI to show that the measurement is running
+    
         if self.ui.measurement_type == 'IV':  #Start IV measurement
             self.write_parameters(self.ui.IV_settings)
-            if not self.safety_check(parameters=self.ui.IV_settings, type = 'IV'): #Perform various checks before starting the measurement
-                return
             self.measurement_thread.set_parameters('IV', self.ui.IV_settings)
+            self.measurement_thread.data_signal.connect(self.receive_data)  #Handles the data signal from the measurement thread
+            self.measurement_thread.finished_signal.connect(self.finish_measurement) # Handles the finished signal from the measurement thread
+            self.measurement_thread.error_signal.connect(self.abort_measurement) #Handles the error signal from the measurement thread
+            self.measurement_thread.start() #Start the measurement thread
         elif self.ui.measurement_type == 'CV': #Start CV measurement
             self.write_parameters(self.ui.CV_settings)
-            if not self.safety_check(parameters=self.ui.CV_settings, type = 'CV'): #Perform various checks before starting the measurement
-                return
             self.measurement_thread.set_parameters('CV', self.ui.CV_settings)
+            self.measurement_thread.data_signal.connect(self.receive_data)  #Handles the data signal from the measurement thread
+            self.measurement_thread.finished_signal.connect(self.finish_measurement) # Handles the finished signal from the measurement thread
+            self.measurement_thread.error_signal.connect(self.abort_measurement) #Handles the error signal from the measurement thread
+            self.measurement_thread.start() #Start the measurement thread
         elif self.ui.measurement_type == 'Constant Voltage': #Start Constant Voltage measurement
-            self.write_parameters(self.ui.ConstantV_settings)
-            if not self.safety_check(parameters=self.ui.ConstantV_settings, type = 'Constant Voltage'): #Perform various checks before starting the measurement
-                return
-            self.measurement_thread.set_parameters('Constant Voltage', self.ui.ConstantV_settings)    
-        
-        self.measurement_thread.start() #Start the measurement thread
-        
+            self.write_parameters(self.ui.constantV_settings)
+            self.measurement_thread.set_parameters('Constant Voltage', self.ui.constantV_settings) 
+            self.measurement_thread.data_signal.connect(self.receive_data)  #Handles the data signal from the measurement thread
+            self.measurement_thread.finished_signal.connect(self.finish_measurement) # Handles the finished signal from the measurement thread
+            self.measurement_thread.error_signal.connect(self.abort_measurement) #Handles the error signal from the measurement thread
+            self.measurement_thread.start() #Start the measurement thread
+
     def receive_data(self, data):
         #Function that receives the data from the measurement thread, saves the data and updates the plot
         #self.ui.canvas.update_plot(data[0], data[1], time_between_measurements=self.ui.time_between_measurements.value()) #update the plot with the new data 
-        self.data_saver.write_data(data)
-        self.ui.canvas.update_data(data[1], data[2]) #update the plot with the new data
-        self.ui.canvas.draw_plot() #draw the plot with the new data
+        
+        if len(data) > 2:
+            self.data_saver.write_data(data)
+            self.ui.canvas.update_data(data[1], data[2]) #update the plot with the new data
+            self.ui.canvas.draw_plot() #draw the plot with the new data
 
     def file_exists_error(self): #Handles the case when the file already exists
         self.ui.abort_button.setEnabled(False)
@@ -390,11 +418,15 @@ class Functionality:
 
     def safety_check(self, parameters=None, type = 'IV'): #This function performs various checks before starting the measurement
         #Check if all connected devices are communicating correctly
+        if len(self.ui.device_handler.smu_devices) == 0:
+            self.abort_measurement('No SMU connected. Not able to perform a measurement')
         if not self.test_communication():
-            return
+            return False
         if parameters is None:
             self.abort_measurement('No parameters given')
-        
+            return False
+
+
         if type == 'IV': # Check the parameters for the IV measurement
             if parameters['startV'] == parameters['stopV']:
                 self.abort_measurement('Start and stop voltage are the same, please enter different values.')
@@ -486,7 +518,7 @@ class Functionality:
     def finish_measurement(self): #Function that is called when the measurement is finished ordinally 
         self.ui_changes_stop()
         self.data_saver.close()
-        print('Measurement finished and data saved to ' + self.data_saver.filepath)
+ #       print('Measurement finished and data saved to ' + self.data_saver.filepath) #debug message             
     
     def save_config(self):
         #This function saves the current settings to a config file
@@ -523,8 +555,6 @@ class Functionality:
 #        }
         with open(file, 'w') as f:
             json.dump(parameters, f, indent = 4)
-
-
 
 class Device_Handler:   #Class that handles the devices and their IDs
     def __init__(self, rm):
@@ -575,6 +605,8 @@ class Device_Handler:   #Class that handles the devices and their IDs
                 self.device_candidates.append([port, id, 'Keithley K2400 SMU'])
             elif 'Keithley' in id and '2611' in id:
                 self.device_candidates.append([port, id, 'Keithley K2611 SMU'])
+            elif 'KEITHLEY' in id and 'MODEL 6487' in id:
+                self.device_candidates.append([port, id, 'Keithley K6487 SMU'])
             elif 'KEITHLEY' in id and '2000'in id:
                 self.device_candidates.append([port, id, 'Keithley K2000 Voltmeter'])
             elif 'NGE103B' in id:
@@ -591,6 +623,3 @@ class Device_Handler:   #Class that handles the devices and their IDs
 
     def clear(self):
         self.device_candidates = []
-
-    
-

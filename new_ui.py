@@ -19,10 +19,6 @@ class Ui_MainWindow(QWidget):
         super().__init__()
         self.rm = rm
         self.device_handler = Device_Handler(self.rm) # Initialize the device handler
-        self.logic = Functionality(self)
-        self.canvas = plotting.PlotCanvas(self) # Initialize the plot canvas
-        self.measurement_type = 'IV'  # Default measurement type
-        self.data_path = data_path # Default data path
         self.IV_settings = { # Dict to store the settings for the IV measurement
         'startV': 0,
         'stopV': 0,
@@ -54,8 +50,11 @@ class Ui_MainWindow(QWidget):
             'custom_sweep': False,
             'custom_sweep_file': '',
         }
+        self.logic = Functionality(self)
+        self.canvas = plotting.PlotCanvas(self) # Initialize the plot canvas
+        self.measurement_type = 'IV'  # Default measurement type
+        self.data_path = data_path # Default data path
         self.setup_ui()
-
         self.logic.openEvent()
 
 
@@ -130,7 +129,8 @@ class Ui_MainWindow(QWidget):
         self.measurement_settings_layout.addWidget(self.measurement_type_comboBox, 0, 1) #Add the ComboBox to the layout
 
         self.measurement_settings = QWidget()  #Creates a widget for the measurement settings
-        self.logic.change_measurement_type(self.measurement_type) #Calls the function to change the measurement type
+        self.measurement_settings.setLayout(self.changeUI_IV())
+        #Sets the layout of the widget to the IV settings by default
         self.measurement_settings_scrollArea = QScrollArea()
         self.measurement_settings_scrollArea.setWidget(self.measurement_settings)
         self.measurement_settings_scrollArea.setWidgetResizable(True)
@@ -169,7 +169,6 @@ class Ui_MainWindow(QWidget):
         self.switch_darkmode.clicked.connect(self.logic.switch_darkmode)
         self.savefile_settings_layout.addWidget(self.switch_darkmode, 16, 0)
 
-
         self.savefile_settings_box.setLayout(self.savefile_settings_layout)
         self.layout.addWidget(self.savefile_settings_box, 5, 0, 1, 1) #Add the group box to the layout
 
@@ -181,7 +180,7 @@ class Ui_MainWindow(QWidget):
 
         self.canvas_settings = QWidget()    #Create a group box for the plot settings
         self.canvas_settings.setLayout(self.canvas_settings_UI())  #Add the layout to the group box
-        self.layout.addWidget(self.canvas_settings, 5, 2, 1, 1) #Add the group box to the layout
+        self.layout.addWidget(self.canvas_settings, 5, 2, 2, 1) #Add the group box to the layout
 
         self.start_button = QPushButton('Start Measurement') #Button to start the measurement 
         self.start_button.clicked.connect(self.logic.start_measurement)

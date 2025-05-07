@@ -60,7 +60,7 @@ class PlotCanvas(FigureCanvas):
             self.parameters['y_label'] = 'Current [A]'
         elif type == 'CV':
             self.parameters['x_label'] = 'Voltage [V]'
-            self.parameters['y_label'] = 'Impedance [Ohm]'
+            self.parameters['y_label'] = 'Current [A]'
         elif type == 'Constant Voltage':
             self.parameters['x_label'] = 'Number of Measurements'
             self.parameters['y_label'] = 'Current [A]'

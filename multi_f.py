@@ -12,7 +12,7 @@ def set_keithley_voltage(keithley, voltage):
     try:
         keithley.write(f"SOUR:VOLT {voltage}\n".encode())
         time.sleep(3)  # Warte auf Stabilisierung
-    except Exception as e:
+    except Exception as e:  
         print(f"Fehler beim Setzen der Spannung: {e}")
 
 def read_impedance(ser, freq):

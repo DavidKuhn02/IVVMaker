@@ -225,7 +225,6 @@ class K2400:
         self.device.write(f':SOUR:VOLT {str(voltage)}')
 
     def measure_current(self):
-#        self.clear_buffer()
         current = float(self.device.query(':MEAS:CURR?').strip('\n'))
         return current
 
@@ -284,6 +283,58 @@ class K2600: #K2600 SMU (up to 200V bias Voltage)
     def measure_voltage(self):
         voltage = self.device.query('print(smua.measure.v())').strip('\n')
         return voltage
+    
+
+class K6487: #K6487 Voltage source/piccoammeter 
+    def __init__(self, port, id, rm):
+        self.device = rm.open_resource(port)
+        self.port = port
+        self.assigned_id = id
+        self.reset()
+        self.voltage = 0 #As the device can only measure current, the voltage that is returned is the same as the set voltage.
+    
+    def reset(self):
+        self.device.write('*RST')
+        self.device.write('SOUR:FUNC VOLT')
+        self.device.write('SOUR:VOLT 0')
+        self.device.write('SOUR:VOLT:STAT OFF')
+    
+    def clear_buffer(self):
+        self.device.write('*CLS')
+
+    def return_port(self):
+        return self.port
+    
+    def return_id(self):
+        return self.device.query('*IDN?')
+    
+    def return_assigned_id(self):
+        return self.assigned_id
+    
+    def close(self):
+        self.device.close()
+
+    def enable_output(self, enable):
+        if enable:
+            self.device.write('SOUR:VOLT:STAT ON')
+        else:
+            self.device.write('SOUR:VOLT:STAT OFF')
+
+    def set_limit(self, limitI):
+        return
+    
+    def set_voltage(self, voltage):
+        self.device.write(f'SOUR:VOLT {voltage}')
+        self.voltage = voltage
+
+    def measure_current(self):
+        data = self.device.query('READ?')
+        data = data.split(',')  
+        current = float(data[0].strip('A'))
+        return current
+
+    def measure_voltage(self):
+        return self.voltage
 
 class LowVoltagePowerSupplies: #Rhode&Schwarz NGE 100 and HAMEG HMP4040 
     def __init__(self,  port, id, rm):
@@ -332,16 +383,15 @@ class LowVoltagePowerSupplies: #Rhode&Schwarz NGE 100 and HAMEG HMP4040
 
 class Hameg8118:
     def __init__(self, port, id, rm):
-        self.device = rm.open_resource(port)
-        self.device.read_termination = '\r'
-        self.device.write_termination = '\r'
+        self.device = rm.open_resource(port, read_termination='\r', write_termination='\r')
         self.port = port
         self.assigned_id = id
-        self.reset()
         self.clear_buffer()
+        self.device.write('FUNC ZTD')
+        self.device.write('DISP:FORM ZTD')
 
     def reset(self):
-        self.device.write('*RST')
+        pass #Does not work on Hameg8118 (breaks the communication)
         
     def clear_buffer(self):
         self.device.write('*CLS')
@@ -350,7 +400,10 @@ class Hameg8118:
         return self.port
     
     def return_id(self):
-        return self.device.query('*IDN?')
+        print("read_termination:", repr(self.device.read_termination))
+        print("write_termination:", repr(self.device.write_termination))
+        self.device.write('*IDN?')
+        return self.device.read()
     
     def return_assigned_id(self):
         return self.assigned_id
@@ -361,11 +414,18 @@ class Hameg8118:
     def set_frequency(self, frequency):
         self.device.write(f'FREQ {frequency}')
 
-    def set_voltage(self, voltage):#
-        self.device.write(f'VOLT {voltage}')
+    def set_voltage(self, voltage):
+        pass 
     
-    def read_output(self):
-        return self.device.query('XALL?').strip('\n').split(',')
+
+    def measure_frequency(self):
+        return self.device.query('FREQ?')
+
+    def measure_impedance(self):
+        return 
     
+    def measure_phase(self):
+        return
+        
     
         
