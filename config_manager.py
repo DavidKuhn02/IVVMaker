@@ -18,46 +18,55 @@ class config_manager:
 
 
     def assemble_config(self):
-        # This function will assemble the config dictionary with all the parameters of a measurement. 
-        config = {
-            'sweep': not self.ui.fixed_voltage_checkBox.isChecked(),
-            'start_voltage': self.ui.startV.value(),
-            'stop_voltage': self.ui.stopV.value(),
-            'step_voltage': self.ui.stepV.value(),
-            'time_between_steps': self.ui.time_between_steps.value(),
-            'time_between_measurements': self.ui.time_between_measurements.value(),
-            'measurements_per_step': self.ui.measurements_per_step.value(),
-            'limit_current': self.ui.limitI.value(),
-            'constant_voltage' : self.ui.fixed_voltage.value(),
-            'custom_sweep': self.ui.use_custom_sweep_checkBox.isChecked(),
-            'custom_sweep_filepath': self.ui.custom_sweep_file.text(),
-            'filename_suffix': self.ui.filename_suffix.currentIndex(),
-            'darkmode': self.ui.logic.darkmode
+        # This function will assemble the config dictionary with all the parameters of a measurement currently set in respective the ui dicts
+        config = { 
+            
+            'measurement_type' : self.ui.measurement_type,
+            'IV' : self.ui.IV_settings,
+            'CV' : self.ui.CV_settings,
+            'Constant Voltage' : self.ui.constantV_settings, 
+            'darkmode' : self.ui.logic.darkmode
         }
+
         return config
 
     def apply_config(self, config):
         # This function will extract the parameters from a given config and set them accordingly.
-        try:
-            self.ui.fixed_voltage_checkBox.setChecked(not config['sweep'])
-            self.ui.startV.setValue(config['start_voltage'])
-            self.ui.stopV.setValue(config['stop_voltage'])
-            self.ui.stepV.setValue(config['step_voltage'])
-            self.ui.time_between_steps.setValue(config['time_between_steps'])
-            self.ui.time_between_measurements.setValue(config['time_between_measurements'])
-            self.ui.measurements_per_step.setValue(config['measurements_per_step'])
-            self.ui.limitI.setValue(config['limit_current'])
-            self.ui.fixed_voltage.setValue(config['constant_voltage'])
-            self.ui.use_custom_sweep_checkBox.setChecked(config['custom_sweep'])
-            self.ui.custom_sweep_file.setText(config['custom_sweep_filepath'])
-            self.ui.filename_suffix.setCurrentIndex(config['filename_suffix'])
-            self.ui.logic.darkmode = config['darkmode']
-            self.ui.logic.update_darkmode()
-            self.ui.logic.enable_fixed_voltage()
-            self.ui.logic.enable_custom_sweep
-        except Exception as e:
-            print('Settin config failed', e)
-        return
+        self.ui.logic.darkmode = config['darkmode']
+        self.ui.logic.update_darkmode()
+        self.ui.measurement_type_comboBox.setCurrentText(config['measurement_type'])
+        if config['measurement_type'] == 'IV':
+            sub_config = config['IV']
+            self.ui.startV_spinBox.setValue(sub_config['startV'])
+            self.ui.stopV_spinBox.setValue(sub_config['stopV'])
+            self.ui.stepV_spinBox.setValue(sub_config['stepV'])
+            self.ui.time_between_steps_spinBox.setValue(sub_config['time_between_steps'])
+            self.ui.time_between_measurements_spinBox.setValue(sub_config['time_between_measurements'])
+            self.ui.measurements_per_step_spinBox.setValue(sub_config['measurements_per_step'])
+            self.ui.limitI_spinBox.setValue(sub_config['limitI'])
+            self.ui.use_custom_sweep_checkBox.setChecked(sub_config['custom_sweep'])
+            self.ui.custom_sweep_file.setText(sub_config['custom_sweep_file'])
+        elif config['measurement_type'] == 'CV':
+            sub_config = config['CV']
+            self.ui.startV_spinBox.setValue(sub_config['startV'])
+            self.ui.stopV_spinBox.setValue(sub_config['stopV'])
+            self.ui.stepV_spinBox.setValue(sub_config['stepV'])
+            self.ui.start_frequency_spinBox.setValue(sub_config['startFrequency'])
+            self.ui.stop_frequency_spinBox.setValue(sub_config['stopFrequency'])
+            self.ui.number_of_frequencies_spinBox.setValue(sub_config['number_of_frequencies'])
+            self.ui.logarithmic_frequency_steps_checkBox.setChecked(sub_config['logarithmic_frequency_steps'])
+            self.ui.time_between_steps_spinBox.setValue(sub_config['time_between_steps'])
+            self.ui.time_between_measurements_spinBox.setValue(sub_config['time_between_measurements'])
+            self.ui.measurements_per_step_spinBox.setValue(sub_config['measurements_per_step'])
+            self.ui.limitI_spinBox.setValue(sub_config['limitI'])
+            self.ui.use_custom_sweep_checkBox.setChecked(sub_config['custom_sweep'])
+            self.ui.custom_sweep_file.setText(sub_config['custom_sweep_file'])
+        elif config['measurement_type'] == 'Constant Voltage':
+            sub_config = config['Constant Voltage']
+            self.ui.constant_voltage_spinBox.setValue(sub_config['constant_voltage'])
+            self.ui.time_between_measurements_spinBox.setValue(sub_config['time_between_measurements'])
+            self.ui.limitI_spinBox.setValue(sub_config['limitI'])
+
 
     def save_config(self, config, filename):
         # Save the config to a json

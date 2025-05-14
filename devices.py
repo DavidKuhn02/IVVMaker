@@ -17,6 +17,8 @@
 # - enable_highC(self, highC): Enables or disables the high current mode of the device (Currently only for K2600)
 # - return_num_channels(self): Returns the number of channels of the device (Currently only for Rhode&Schwarz NGE100 and HAMEG HMP4040)
 # Currently supported devices: Keithley 2000 Voltmeter, Keithley 2200 SMU, Keithley 2600 SMU, Rhode&Schwarz NGE100 Power Supply and HAMEG HMP4040 Power Supply 
+import pyvisa
+
 
 class Dummy_Device: # Dummy Device for testing purposes
     def __init__(self, port, id, rm): 
@@ -66,9 +68,22 @@ class K2000: # K2000 Voltmeter (able to measure Voltage/Resistance)
         self.device = rm.open_resource(port)
         self.port = port
         self.assigned_id = id
+        self.settings = {  #Standard settings for the Keithley 2000 (loaded when the device is connected)
+            'measurement_type': 'VOLD:DC',
+            'voltage_range': 'Auto',
+            'current_range': 'Auto',
+            'resistance_range': 'Auto',
+            'use_filter': False,
+            'filter_num': 10,
+            'filter_type': 'Moving Average',
+            }
+        self.type = 'VOLT:DC'   # Sets the default measurement type to DC Voltage
+        self.set_measurement_type(self.type)
         self.reset()
+        self.clear_buffer()
+
     def reset(self):
-        self.device.write('RST*')
+        self.device.write('*RST')
 
     def clear_buffer(self):
         self.device.write('*CLS')
@@ -77,7 +92,7 @@ class K2000: # K2000 Voltmeter (able to measure Voltage/Resistance)
         return self.port
 
     def return_id(self):
-        return self.device.query('*IDN?')
+        return self.device.query('*IDN?').strip('').strip('')
     
     def return_assigned_id(self):
         return self.assigned_id
@@ -85,16 +100,47 @@ class K2000: # K2000 Voltmeter (able to measure Voltage/Resistance)
     def close(self):
         self.device.close()
 
-    def measure_voltage(self):
-        self.device.write('SENS:FUNC "VOLT:DC"')
-        voltage = self.device.query('READ?')
-        return voltage
+    def measure(self):
+        return self.device.query('READ?').strip('').strip('').strip('\n').strip() #Try to strip the unwanted characters from the output. (Sometimes doesnt work for some reason)
     
-    def measure_resistance(self):
-        self.device.write('SENS:FUNC "RES"')
-        resistance = self.device.query('READ?')
-        return resistance
-    
+    def set_measurement_type(self, type):
+        self.type = type
+        self.device.write('SENS:FUNC "{}"'.format(type))
+
+    def update_voltage_range(self, range):
+        if range == 'AUTO':
+            self.device.write('SENS:VOLT:DC:RANG:AUTO ON')
+        else:
+            self.device.write('SENS:VOLT:DC:RANG:AUTO OFF')
+            self.device.write(f'SENS:VOLT:DC:RANG {range}')
+
+    def update_current_range(self, range):
+        if range == 'AUTO':
+            self.device.write('SENS:CURR:DC:RANG:AUTO ON')
+        else:
+            self.device.write('SENS:CURR:DC:RANG:AUTO OFF')
+            self.device.write(f'SENS:CURR:DC:RANG {range}')
+
+    def update_resistance_range(self, range):
+        if range == 'AUTO':
+            self.device.write('SENS:RES:RANG:AUTO ON')
+        else:
+            self.device.write('SENS:RES:RANG:AUTO OFF')
+            self.device.write(f'SENS:RES:RANG {range}')
+ 
+    def update_filter(self, filter, filter_type, filter_num):
+        
+        if filter:
+            self.device.write(f'SENS:{self.type}:AVER:STAT ON')
+        else:
+            self.device.write(f'SENS:{self.type}:AVER:STAT OFF')
+        self.device.write(f'SENS:{self.type}:AVER:COUNT {str(filter_num)}')
+        if filter_type == 'Moving Average':
+            self.device.write(f'SENS:{self.type}:AVER:TCON MOV')
+        elif filter_type == 'Repeat Average':
+            self.device.write(f'SENS:{self.type}:AVER:TCON REP')
+        
+
 class K2200:
     def __init__(self, port, id, rm):
         self.device = rm.open_resource(port)
@@ -104,7 +150,7 @@ class K2200:
         self.clear_buffer()
 
     def reset(self):
-        self.device.write('RST*')
+        self.device.write('*RST')
 
     def clear_buffer(self):
         self.device.write('*CLS')
@@ -146,7 +192,16 @@ class K2400:
         self.device = rm.open_resource(port)
         self.port = port
         self.assigned_id = id
-        self.device.write('LANG SCPI') # Sets the language to SCPI
+        self.settings = { #Standard settings for the Keithley 2400 (loaded when the device is connected)
+            'voltage_range': 'Auto',
+            'current_range': 'Auto',
+            'nplc': 1,
+            'high_capacitance': False,
+            'use_filter': False,
+            'filter_num': 10,
+            'filter_type': 'Moving Average',
+            'auto_zero': True,
+        }
         self.reset()
         self.clear_buffer()
         self.device.write(':SOUR:FUNC VOLT') # Sets Source to voltage mode (needed for IV Curves)
@@ -157,6 +212,8 @@ class K2400:
 
     def clear_buffer(self):
         self.device.write('*CLS')
+        self.device.write('TRAC:CLE "defbuffer1"')
+        self.device.write('TRAC:CLE "defbuffer2"')
 
     def return_port(self):
         return self.port
@@ -169,6 +226,46 @@ class K2400:
     
     def close(self):
         self.device.close()
+
+    def enable_highC(self, highC):
+        if highC:
+            self.device.write(':SOUR:VOLT:HIGH:CAP ON')
+        else:
+            self.device.write(':SOUR:VOLT:HIGH:CAP OFF')
+    
+    def set_voltage_range(self, range):
+        if range == 'Auto':
+            self.device.write(':SOUR:VOLT:RANG:AUTO ON')
+        else:
+            self.device.write(':SOUR:VOLT:RANG:AUTO OFF')
+            self.device.write(f':SOUR:VOLT:RANG {range}')
+    
+    def set_current_range(self, range):
+        if range == 'Auto':
+            self.device.write(':SENS:CURR:RANG:AUTO ON')
+        else:
+            self.device.write(':SENS:CURR:RANG:AUTO OFF')
+            self.device.write(f':SENS:CURR:RANG {range}')
+
+    def set_filter(self, filter, filter_type, filter_num):
+        self.device.write(f':SENS:CURR:AVER:COUN {str(filter_num)}')
+        if filter_type == 'Moving Average':
+            self.device.write(f':SENS:CURR:AVER:TCON MOV')
+        elif filter_type == 'Repeat Average':
+            self.device.write(f':SENS:CURR:AVER:TCON REP')
+        if filter:
+            self.device.write(':SENS:CURR:AVER ON')
+        else:
+            self.device.write(':SENS:CURR:AVER OFF')
+
+    def set_nplc(self, nplc):
+        self.device.write(f':SENS:CURR:NPLC {str(nplc)}')
+
+    def set_auto_zero(self, auto_zero):
+        if auto_zero:
+            self.device.write(':SENS:CURR:AZER ON')
+        else:
+            self.device.write(':SENS:CURR:AZER OFF')
 
     def enable_output(self, enable):
         if enable:
@@ -225,11 +322,39 @@ class K2600: #K2600 SMU (up to 200V bias Voltage)
     def set_limit(self, limitI):
         self.device.write(f'smua.source.limiti= {str(limitI)}')   
 
-    def enable_highC(self, highC):
+    def enable_highC(self, highC): #In normal operation, the SMU in the Series 2600A can drive capacitive loads as large as 10 nF. In 
+        #high-capacitance mode, the SMU can drive a maximum of 50 μF of capacitance.
         if highC:
             self.device.write('smua.source.highc = smua.ENABLE')
         else:
             self.device.write('smua.source.highc = smua.DISABLE')
+
+    def set_current_range(self, range):
+        if range == 'Auto':
+            self.device.write('smua.source.autorangei = smua.AUTORANGE_ON')
+        else:
+            self.device.write('smua.source.autorangei = smua.AUTORANGE_OFF')
+            self.device.write('smua.source.rangei = {}'.format(range))
+
+    def set_voltage_range(self, range):
+        if range == 'Auto':
+            self.device.write('smua.source.autorangev = smua.AUTORANGE_ON')
+        else:
+            self.device.write('smua.source.autorangev = smua.AUTORANGE_OFF')
+            self.device.write('smua.source.rangev = {}'.format(range))
+
+    def update_filter(self, filter, filter_type, filter_num):
+        self.device.write(f'smua.measure.filter.count = {str(filter_num)}')
+        if filter_type == 'Moving Average':
+            self.device.write('smua.measure.filter.type = smua.FILTER_MOVING_AVG')
+        elif filter_type == 'Repeat Average':
+            self.device.write('smua.measure.filter.type = smua.FILTER_REPEAT_AVG')
+        elif filter_type == 'Median':
+            self.device.write('smua.measure.filter.type = smua.FILTER_MEDIAN')
+        if filter:
+            self.device.write('smua.measure.filter.enable = smua.FILTER_ON')
+        else:
+            self.device.write('smua.measure.filter.enable = smua.FILTER_OFF')
 
     def set_voltage(self, voltage):
         self.device.write('smua.source.levelv={:.1f}'.format(voltage))
@@ -241,6 +366,58 @@ class K2600: #K2600 SMU (up to 200V bias Voltage)
     def measure_voltage(self):
         voltage = self.device.query('print(smua.measure.v())').strip('\n')
         return voltage
+    
+
+class K6487: #K6487 Voltage source/piccoammeter 
+    def __init__(self, port, id, rm):
+        self.device = rm.open_resource(port)
+        self.port = port
+        self.assigned_id = id
+        self.reset()
+        self.voltage = 0 #As the device can only measure current, the voltage that is returned is the same as the set voltage.
+    
+    def reset(self):
+        self.device.write('*RST')
+        self.device.write('SOUR:FUNC VOLT')
+        self.device.write('SOUR:VOLT 0')
+        self.device.write('SOUR:VOLT:STAT OFF')
+    
+    def clear_buffer(self):
+        self.device.write('*CLS')
+
+    def return_port(self):
+        return self.port
+    
+    def return_id(self):
+        return self.device.query('*IDN?')
+    
+    def return_assigned_id(self):
+        return self.assigned_id
+    
+    def close(self):
+        self.device.close()
+
+    def enable_output(self, enable):
+        if enable:
+            self.device.write('SOUR:VOLT:STAT ON')
+        else:
+            self.device.write('SOUR:VOLT:STAT OFF')
+
+    def set_limit(self, limitI):
+        return
+    
+    def set_voltage(self, voltage):
+        self.device.write(f'SOUR:VOLT {voltage}')
+        self.voltage = voltage
+
+    def measure_current(self):
+        data = self.device.query('READ?')
+        data = data.split(',')  
+        current = float(data[0].strip('A'))
+        return current
+
+    def measure_voltage(self):
+        return self.voltage
 
 class LowVoltagePowerSupplies: #Rhode&Schwarz NGE 100 and HAMEG HMP4040 
     def __init__(self,  port, id, rm):
@@ -286,3 +463,74 @@ class LowVoltagePowerSupplies: #Rhode&Schwarz NGE 100 and HAMEG HMP4040
             U.append(float(self.device.query('MEAS:VOLT?')))
         
         return U, I
+
+class Hameg8118:
+    def __init__(self, port, id, rm):
+        self.device = rm.open_resource(port, read_termination='\r', write_termination='\r')
+        self.rm = rm
+        self.port = port
+        self.assigned_id = id
+        self.clear_buffer()
+        self.device.write('PMOD 6') # Sets the device to measure Impedance and Phase
+
+    def reset(self):
+        pass #Does not work on Hameg8118 (breaks the communication)
+        
+    def clear_buffer(self):
+        self.device.write('*CLS')
+    
+    def return_port(self):
+        return self.port
+    
+    def return_id(self):
+        print("read_termination:", repr(self.device.read_termination))
+        print("write_termination:", repr(self.device.write_termination))
+        self.device.write('*IDN?')
+        return self.device.read()
+    
+    def return_assigned_id(self):
+        return self.assigned_id
+    
+    def close(self):
+        self.device.close()
+    
+    def set_frequency(self, frequency):
+        self.device.write(f'FREQ {frequency}')
+
+    def set_voltage(self, voltage):
+        pass 
+    
+    def measure_frequency(self):
+        return self.query_failsave('FREQ?')
+    
+    def measure(self):
+        values = self.query_failsave('XALL?')
+        if values == 'Error':
+            return 0, 0
+        return values.split(',')[0:1]
+        #Returns impedance and phase angle (in degrees) 
+        
+    def query_failsave(self, command):
+        # This function is used to query the device and handle timeouts
+        # It will try to reconnect to the device if a timeout occurs
+        # If the reconnection fails, it will raise an error which will result in the measurement being aborted, but as the device is not responding, thats the only feasible option. 
+        try:
+            ans = self.device.query(command)
+            ans = ans.strip('\n')
+        except pyvisa.errors.VisaIOError as e:
+            if 'timeout' in str(e):
+                print(f'{self.id} timeout, trying to reconnect.')
+                self.device = self.rm.open_resource(self.port, read_termination='\r', write_termination='\r')
+                self.device.write('PMOD 6')
+            else:
+                raise e
+            try:
+                ans = self.device.query('MEAS?')
+            except:
+                raise f'Reestablishing connection with {self.id} failed, measurement was aborted.'
+            
+        return ans 
+        
+
+    
+        
