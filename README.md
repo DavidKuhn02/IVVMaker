@@ -1,16 +1,22 @@
 # IVVMaker
-This piece of software is intended to be used to measure IV characteristics of electronic devices using a SMU. It features a user friendly GUI to control your measurement.
-
+This piece of software is intended to be used to measure various electrical parameters of devices under test (DUTs) using a variety of devices. The software is designed to be modular and easy to use, allowing users to add support for new devices and customize the measurement process. The software is written in Python and uses the PyQt5 library for the GUI. It also uses the PyVISA library for communication with the devices.
 ## Feautures
-- GUI to set the parameters for the measurement and control the devices for the measurement
-- Real time plotting of the data during the measurement
-- Save and load configs to repeat measurements without a hassle
-- Currently implemented devices:
-    - SMU (__Keithley 2200__ series, __Keithley 2400__ [set to SCPI command language] series, __Keithley 2600__ series)
-    - Voltage Meter (__Keithley 2000__ series)
-    - Resistance Meter (__Keithley 2000__ series)
-    - Low Voltage Power Supply (__HAMEG HMP4040__ series, __Rhode & Schwarz NGE100__ series) 
-
+- Modular design: The software is designed to be modular, allowing users to add support for new devices and customize the measurement process.
+- Easy to use GUI: The software has a user-friendly GUI that allows users to easily configure the measurement process and view the results.
+- Support for a range of devices. It currently includes support for:
+    - Keithley 2200 series SMUs
+    - Keithley 2400 series SMUs
+    - Keithley 2600 series SMUs
+    - Keithley 2000 series DMMs
+    - Hameg HMP 4000 series power supply
+    - Rhode&Schwarz NGE100 series power supply
+    - Keithley 6487 piccoammeter
+    - Hameg 8118 LCR Bridge
+- The following measurements are supported:
+    - Current-Voltage characteristics (I-V curves) 
+    - Constant voltage measurement (I-t curves)
+    - Capacitance-voltage characteristics (C-V curves)
+    - Tracking of additional parameters (e.g. resistances, voltages, power use, etc.) for all three measurement types
 ## File structure
 - `main.py` : Main file to start the application
 - `devices.py`: File containing the classes for the devices. This is where you can add support for additional devices.
@@ -20,6 +26,7 @@ This piece of software is intended to be used to measure IV characteristics of e
 - `data_handler.py`: File containing the class for the data handling. This is where the data saving is handled.
 - `plotting.py`: File containing the class for the plotting. This is where the plotting of the live data is handled.
 - `config_manager.py`: File containing the class to save and load configs for your measurement.
+- `parameter_dialog.py`: File containing the classes for the parameter dialogs. This handles the advanced settings for the devices.
 ## Installation
 1. Clone the repository
 ```bash 
@@ -49,33 +56,27 @@ python main.py
 
     If you know what you're doing you can use the "Search and add all connected Devices". This is only recommended if you are sure that you want to use all the devices connected to your computer.
     
-    The device should now be listed in the "Connected Devices" menu. There you the option to remove the device from this list if you dont want to use it in your measurement. Additional you can reset the device and clear its buffer. For some devices additional options are available. For example you can choose if the device should measure a voltage or current.
+    The device should now be listed in the "Connected Devices" menu. There you have the option to remove the device from this list if you dont want to use it in your measurement. Additional you can reset the device and clear its buffer. For some devices advanced settings are available. These can be used to further configure the device (usage of fixed ranges, filters, etc.). Feel free to add additional settings for your device in the `parameter_dialog.py` file. Currently only available for the Keithley K2600 series and K2000 series.
 
-    If you want to add support for additional devices, you can do this by creating a new class in the device file and including them in the `logic.py` file in the `add_device` function. 
+    To support additional devices, you can add them to the `devices.py` file. Additionally you need to add them to the logic in the `logic.py` to properly include them. Only do this if really needed.   
 
-3. Enter the parameters for the measurement. You can choose between a voltage sweep or a measurement with a constant applied voltage.
-The parameters are:
-    - __Start Voltage__: The starting voltage for the measurement. This is only used for a voltage sweep.
-    - __Stop Voltage__: The stopping voltage for the measurement. This is only used for a voltage sweep.
-    - __Step Voltage__: The step voltage for the measurement. This is only used for a voltage sweep.
-    - __Time between steps__: The time between each step in the measurement to enable built up charges to decay. This is only used for a voltage sweep.
-    - __Time between measurements__: The time between each measurement.
-    - __Measurements per step__: The number of measurements to take at each step. This is only used for a voltage sweep. 
-    - __Current Limit__: The current limit for the measurement. This is important to set appropiate for the DUT to avoid damage.
-    - __Constant Voltage__: The constant voltage to apply to the DUT. This is only used for a constant voltage measurement.
-    - __Custom Sweep__: Select custom sweep file for your measurement. This file should be a csv file with the following format (see `custom_sweep_example.csv` for reference):
-        - Column 1: Voltages for your sweep
-        - Column 2: Number of measurements for each voltage 
-    - __File Name__: The name of the file to save the measurement to. You can select the path for your data individually, the default path is IVVMaker/data/
-    - __File Format__: The format of the file to save the measurement to. The default format is csv, with ' ' as delimiter. 
+3. Choose which kind of measurement you want to perform. The options are:
+    - I-V curve measurement
+    - Constant voltage measurement
+    - C-V curve measurement
+    
+    After choosing your measurement type, you can set the parameters for the measurement. All of the parameters are more or less self-explanatory. If you are unsure what a parameter does, test it. Entering invalid parameters will result in an error message. Be aware that to start a measurement at least one SMU device has to be connected. For the C-V measurement at least one LCR bridge has to be connected as well. The IV and CV measurement will auomatically stop after the sweep has concluded. The constant voltage measurement can only be stopped by manually aborting the measurement.
+4. During the measurement, the recorded data will be shown in the plot.
+    The plot will be updated in real time. The toolbar can be used to visually edit the plot directly in the GUI. You also have the option to include older mesaurements in the plot by using the "Load Data" button. Please be sure that the measurement you are loading is of the same type as the one you are currently performing. Otherwise this could lead to problems. Be also aware that for a CV measurement not the capacitance but rather the current from the SMU is plotted. This is due to the fact that the capacitance must be calculated using the data from the LCR bridge. As this calculation is dependent on the model you are using, this is not done live. If you perform a CV measurement you probably also know how to calculate the capacitance from the data. If not refer to the manual of the LCR bridge (eg. [Hameg 8118](https://www.rohde-schwarz.com/de/handbuch/hm8118-lcr-messbruecke-bedienhandbuch-handbuecher_78701-156992.html)) for more information.
 
-4. During the measurement, the recorded data will be shown in the plot. The plot will be updated in real time. If you do a voltage sweep, the plot will show the current as a function of the voltage. If you do a constant voltage measurement, the plot will show the current as a function of time. You can set custom limits for the plot to be able to zoom in on the data. You are also able to load the data from a previous measurement. Please note that only the data of the first connected SMU is plotted in the live view for now. The data of the other devices is saved in the file, but not plotted in the live view. This could be added in a future version. If you load a constant voltage measurement, note that the time between measurements is not saved in the file. This means that the time axis could be wrong, as it uses the current value of the time between measurements. This can also be fixed in the furture. 
+5. During the measurement all accumulated data is saved to a file. The file will be saved in the folder specified in the GUI. The default is `cwd/data`. You can choose which format is used for the data, but `.csv` is recommended. Along with the data, a log file will be created. This file contains all the settings and devices with their settings used for the measurement. 
 
-5. After the measurement is finished, the data will be saved to the file you specified. The data will be saved in the format you specified. The default format is csv, with ' ' as delimiter. The data will be saved in the following format:
-- Column 1: Voltage of SMU0
-- Column 2: Current of SMU0
-If more decvices are connected, the next columns will be the data of additional SMUs, after that possible voltage meters and resistance meters will be saved. At the end the voltage and currents of the low voltage power supplies will be saved. 
+6. After the measurement is finished, you can save the data to a file. The file will be saved in the folder specified in the GUI. The default is `cwd/data`. You can choose which format is used for the data, but `.csv` is recommended. Along with the data, a log file will be created. This file contains all the settings and devices with their settings used for the measurement.
+    
+    The first column of the data file contains the target voltage for every measurement. After that follows the data from the SMUs with Voltage | Current. The next columns depend on the devices you are using. Each row is one measurement done at the target voltage.   
 
-    The data will have two lines of header, the first one being either the number of steps taken in the sweep (for sweep measurements) or the time between measurements (for constant voltage measurements). This is done to simplify the analysis and not strictly needed. Be aware that while loading data in the plot, the first two lines of the data fil will always be skipped, as the header is expected there.
 ### Saving and loading configs
 If you close te program the current settings are saved to the at `latest.json` config file and loaded again if you start the application the next time. Additional you have the option to save customized configs using the respective button. These manually saved configs can also be loaded again. 
+
+## Contributing
+If you want to contribute to the project, feel free to fork the repository and create a pull request. If you have any questions or suggestions, please open an issue on GitHub or contact me directly via [E-Mail](mailto:kuhn@physi.uni-heidelberg.de)
