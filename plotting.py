@@ -59,12 +59,15 @@ class PlotCanvas(FigureCanvas):
         if type == 'IV':
             self.parameters['x_label'] = 'Voltage [V]'
             self.parameters['y_label'] = 'Current [A]'
+            self.ax.autoscale_view()
         elif type == 'CV':
             self.parameters['x_label'] = 'Voltage [V]'
             self.parameters['y_label'] = 'Current [A]'
+            self.ax.autoscale_view()
         elif type == 'Constant Voltage':
             self.parameters['x_label'] = 'Number of Measurements'
             self.parameters['y_label'] = 'Current [A]'
+            self.ax.autoscale_view()
         self.draw_plot()
     
     def clear_live_data(self):

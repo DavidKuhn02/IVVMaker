@@ -17,6 +17,8 @@
 # - enable_highC(self, highC): Enables or disables the high current mode of the device (Currently only for K2600)
 # - return_num_channels(self): Returns the number of channels of the device (Currently only for Rhode&Schwarz NGE100 and HAMEG HMP4040)
 # Currently supported devices: Keithley 2000 Voltmeter, Keithley 2200 SMU, Keithley 2600 SMU, Rhode&Schwarz NGE100 Power Supply and HAMEG HMP4040 Power Supply 
+import pyvisa
+
 
 class Dummy_Device: # Dummy Device for testing purposes
     def __init__(self, port, id, rm): 
@@ -99,7 +101,7 @@ class K2000: # K2000 Voltmeter (able to measure Voltage/Resistance)
         self.device.close()
 
     def measure(self):
-        return self.device.query('READ?').strip('').strip('').strip('\n').strip()
+        return self.device.query('READ?').strip('').strip('').strip('\n').strip() #Try to strip the unwanted characters from the output. (Sometimes doesnt work for some reason)
     
     def set_measurement_type(self, type):
         self.type = type
@@ -320,11 +322,39 @@ class K2600: #K2600 SMU (up to 200V bias Voltage)
     def set_limit(self, limitI):
         self.device.write(f'smua.source.limiti= {str(limitI)}')   
 
-    def enable_highC(self, highC):
+    def enable_highC(self, highC): #In normal operation, the SMU in the Series 2600A can drive capacitive loads as large as 10 nF. In 
+        #high-capacitance mode, the SMU can drive a maximum of 50 μF of capacitance.
         if highC:
             self.device.write('smua.source.highc = smua.ENABLE')
         else:
             self.device.write('smua.source.highc = smua.DISABLE')
+
+    def set_current_range(self, range):
+        if range == 'Auto':
+            self.device.write('smua.source.autorangei = smua.AUTORANGE_ON')
+        else:
+            self.device.write('smua.source.autorangei = smua.AUTORANGE_OFF')
+            self.device.write('smua.source.rangei = {}'.format(range))
+
+    def set_voltage_range(self, range):
+        if range == 'Auto':
+            self.device.write('smua.source.autorangev = smua.AUTORANGE_ON')
+        else:
+            self.device.write('smua.source.autorangev = smua.AUTORANGE_OFF')
+            self.device.write('smua.source.rangev = {}'.format(range))
+
+    def update_filter(self, filter, filter_type, filter_num):
+        self.device.write(f'smua.measure.filter.count = {str(filter_num)}')
+        if filter_type == 'Moving Average':
+            self.device.write('smua.measure.filter.type = smua.FILTER_MOVING_AVG')
+        elif filter_type == 'Repeat Average':
+            self.device.write('smua.measure.filter.type = smua.FILTER_REPEAT_AVG')
+        elif filter_type == 'Median':
+            self.device.write('smua.measure.filter.type = smua.FILTER_MEDIAN')
+        if filter:
+            self.device.write('smua.measure.filter.enable = smua.FILTER_ON')
+        else:
+            self.device.write('smua.measure.filter.enable = smua.FILTER_OFF')
 
     def set_voltage(self, voltage):
         self.device.write('smua.source.levelv={:.1f}'.format(voltage))
@@ -437,11 +467,11 @@ class LowVoltagePowerSupplies: #Rhode&Schwarz NGE 100 and HAMEG HMP4040
 class Hameg8118:
     def __init__(self, port, id, rm):
         self.device = rm.open_resource(port, read_termination='\r', write_termination='\r')
+        self.rm = rm
         self.port = port
         self.assigned_id = id
         self.clear_buffer()
-        self.device.write('FUNC ZTD')
-        self.device.write('DISP:FORM ZTD')
+        self.device.write('PMOD 6') # Sets the device to measure Impedance and Phase
 
     def reset(self):
         pass #Does not work on Hameg8118 (breaks the communication)
@@ -471,13 +501,36 @@ class Hameg8118:
         pass 
     
     def measure_frequency(self):
-        return self.device.query('FREQ?')
-
-    def measure_impedance(self):
-        return 
+        return self.query_failsave('FREQ?')
     
-    def measure_phase(self):
-        return
+    def measure(self):
+        values = self.query_failsave('XALL?')
+        if values == 'Error':
+            return 0, 0
+        return values.split(',')[0:1]
+        #Returns impedance and phase angle (in degrees) 
         
+    def query_failsave(self, command):
+        # This function is used to query the device and handle timeouts
+        # It will try to reconnect to the device if a timeout occurs
+        # If the reconnection fails, it will raise an error which will result in the measurement being aborted, but as the device is not responding, thats the only feasible option. 
+        try:
+            ans = self.device.query(command)
+            ans = ans.strip('\n')
+        except pyvisa.errors.VisaIOError as e:
+            if 'timeout' in str(e):
+                print(f'{self.id} timeout, trying to reconnect.')
+                self.device = self.rm.open_resource(self.port, read_termination='\r', write_termination='\r')
+                self.device.write('PMOD 6')
+            else:
+                raise e
+            try:
+                ans = self.device.query('MEAS?')
+            except:
+                raise f'Reestablishing connection with {self.id} failed, measurement was aborted.'
+            
+        return ans 
+        
+
     
         

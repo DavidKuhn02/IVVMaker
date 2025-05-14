@@ -19,12 +19,16 @@ class Functionality:
         self.ui = ui
         self.darkmode = False
         self.config_manager = config_manager.config_manager(self.ui)
+        self.open_parameter_dialogs = [] #List of open parameter dialogs, to be closed when the measurement is started
 
     def openEvent(self):
-        config = self.config_manager.load_config(os.path.join(os.path.dirname(__file__), 'config', 'latest.json'))
-        self.change_measurement_type(type = config['measurement_type'] ,config = config)
+        #This is called at the start of the program and sets up the UI
+        config = self.config_manager.load_config(os.path.join(os.path.dirname(__file__), 'config', 'latest.json')) #Loads the latest config file (created on closing the program)
+        self.change_measurement_type(type = config['measurement_type'] ,config = config) #Set the measurement type to the one in the config file for the UI to load properly
 
     def closeEvent(self):
+        #This function is called when the program is closed and saves the current settings to a config file
+        #It also closes all devices 
         for device in self.ui.device_handler.smu_devices:
             device.close()
         for device in self.ui.device_handler.voltmeter_devices:
@@ -36,6 +40,7 @@ class Functionality:
         self.config_manager.save_config(config, os.path.join(os.path.dirname(__file__), 'config', 'latest.json'))
 
     def switch_darkmode(self):
+        #This function switches the dark mode on and off (just for fun and my eyes in a dark lab)
         app = QApplication.instance()
         self.darkmode = not self.darkmode
         if self.darkmode:
@@ -44,6 +49,7 @@ class Functionality:
             app.setStyleSheet("")
 
     def update_darkmode(self):
+        #This function updates the dark mode when the program is started
         app = QApplication.instance()
         if self.darkmode:
             app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
@@ -110,7 +116,6 @@ class Functionality:
         self.ui.select_decive.clear()
         self.ui.select_decive.addItem('Select Device')
         for candidate in self.ui.device_handler.device_candidates:
-            self.ui.device_handler.device_candidates.remove(candidate)
             self.ui.device_handler.used_ids.append(candidate[1])
             if 'Keithley K2200 SMU' in candidate[2]: # Check the type of the device and create the respective object 
                 device = devices.K2200(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
@@ -139,9 +144,9 @@ class Functionality:
             else:
                 print('Device not supported')
                 return 
-            widget = self.create_device_widget(candidate, device)
-            self.ui.device_widgets.append(widget)
-            self.ui.device_scrollLayout.addWidget(widget) # Add the device to the scroll area
+            widget = self.create_device_widget(candidate, device) #create the widget for the device
+            self.ui.device_widgets.append(widget) # Adds the widget to the list of device widgets
+            self.ui.device_scrollLayout.addWidget(widget) # Add the widget to the scroll area
 
     def create_device_widget(self, candidate, device):
         #This function creates the widget for the device and adds it to the scroll area
@@ -178,12 +183,16 @@ class Functionality:
         #This function opens the parameter dialog for the device
         #It is used to set the parameters for the device, like voltage range, current range, etc.
         if type == 'Keithley K2000 Voltmeter':
-            self.parameter_dialog = parameter_dialog.ParameterDialog_K2000(device, id, self.ui.rm)
-            self.parameter_dialog.show()
+            dialog = parameter_dialog.ParameterDialog_K2000(device, id, self.ui.rm, self)
+            dialog.show()
+            self.open_parameter_dialogs.append(dialog)
         if type == 'Keithley K2400 SMU':
-            self.parameter_dialog = parameter_dialog.ParameterDiaglog_K2400(device, id, self.ui.rm)
-            self.parameter_dialog.show()
-    
+            dialog = parameter_dialog.ParameterDiaglog_K2400(device, id, self.ui.rm, self)
+            dialog.show()
+            self.open_parameter_dialogs.append(dialog)
+        
+        
+
     def reset_device(self, device): 
         #Function for the device widget to reset the device
         try: 
@@ -219,6 +228,7 @@ class Functionality:
             self.ui.device_handler.capacitancemeter_devices.remove(device)
 
         device.close()
+        return
      
     def enable_custom_sweep(self):
         #This function enables or disables the custom sweep mode 
@@ -231,8 +241,10 @@ class Functionality:
         folder = QFileDialog.getExistingDirectory(self.ui, 'Select a Folder')
         if folder:
             self.ui.folder_path.setText(folder)
+            return
 
     def change_measurement_type(self, type, config = None):
+        # This function changes the measurement type and updates the UI accordingly. It saves the current settings, so if the user decides to switch back to the previous measurement type, the settings are still there.
         self.update_measurement_settings()
         self.ui.measurement_type = type
         if type == 'IV':
@@ -249,9 +261,10 @@ class Functionality:
             config = self.config_manager.assemble_config() #Assemble the config from the UI
         self.config_manager.apply_config(config) #Apply the config to the new layout
         self.ui.canvas.change_plot_type(type) #Change the plot type to the new measurement type
+        return
 
     def K2200_warning(self):
-        #This function shows a warning message if the K2200 is selected as a device
+        #This function shows a warning message if the K2200 is selected as a device, as it is not able to apply negative voltages, so the user has to reverse the polarity on the device
         warning = QMessageBox.warning(self.ui, 'Warning', 'Please note that the K2200 is not able to apply negative voltages. To achieve that please physically reverse the polarity on this device.', QMessageBox.Ok, QMessageBox.Ok)
 
     def ui_changes_start(self): 
@@ -320,20 +333,21 @@ class Functionality:
                 print('Error updating measurement settings', e)
 
     def start_measurement(self):
+        #This function starts the measurement and creates the data saver object
+        #It is called when the user clicks the start button
         self.update_measurement_settings() #Update the measurement settings
-
-        if self.ui.measurement_type == 'IV':
+        for dialog in self.open_parameter_dialogs:
+            dialog.close()
+        if self.ui.measurement_type == 'IV': #Choose the parameters based on the measurement type
             parameters = self.ui.IV_settings
         elif self.ui.measurement_type == 'CV':
             parameters = self.ui.CV_settings
         elif self.ui.measurement_type == 'Constant Voltage':
             parameters = self.ui.constantV_settings
         
-        if not self.safety_check(parameters = parameters, type = self.ui.measurement_type): #Perform various checks before starting the measurement
-                return
-        #This function is responsible for actually starting the measurement
-        #It takes care of the UI changes and starts the measurement thread
-        #It also takes care of the data saving and the sweep creation
+        if not self.safety_check(parameters = parameters, type = self.ui.measurement_type): #Perform various sanity checks before starting the measurement, mainly to prevent the user from doing things that are not intended
+            return
+
         try:  #try to create the data saver object, if the file already exists, raise an error
             self.data_saver = data_handler.DataSaver(   #start the data save thread 
                 filepath = self.ui.folder_path.text(),
@@ -345,7 +359,7 @@ class Functionality:
             self.file_exists_error()
             return        
         
-        self.measurement_thread = measurement_thread.MeasurementThread(ui = self.ui, device_handler= self.ui.device_handler) #start the measurement thread 
+        self.measurement_thread = measurement_thread.MeasurementThread(ui = self.ui, device_handler= self.ui.device_handler) #Create the measurement thread 
         try:
             self.measurement_thread.finished_signal.disconnect(self.finish_measurement)
         except TypeError:
@@ -377,14 +391,12 @@ class Functionality:
             self.measurement_thread.start() #Start the measurement thread
 
     def receive_data(self, data):
-        #Function that receives the data from the measurement thread, saves the data and updates the plot
-        #self.ui.canvas.update_plot(data[0], data[1], time_between_measurements=self.ui.time_between_measurements.value()) #update the plot with the new data 
-        
-        if len(data) > 2:
+      
+        if len(data) > 2: #Check if the data is valid
             self.data_saver.write_data(data)
             self.ui.canvas.update_data(data[1], data[2]) #update the plot with the new data
             self.ui.canvas.draw_plot() #draw the plot with the new data
-            self.ui.live_current_data.setText(f'{data[2]*1e9:.3f} nA')
+            self.ui.live_current_data.setText(f'{data[2]*1e9:.3f} nA') #Set the live data to the UI
             self.ui.live_voltage_data.setText(f'{data[1]:.3f} V')
 
     def file_exists_error(self): #Handles the case when the file already exists
@@ -395,12 +407,17 @@ class Functionality:
         #Check if all connected devices are communicating correctly
         if len(self.ui.device_handler.smu_devices) == 0:
             self.abort_measurement('No SMU connected. Not able to perform a measurement')
+            return False
+
+        if type == 'CV' and len(self.ui.device_handler.capacitancemeter_devices) == 0:
+            self.abort_measurement('No capacitance meter connected. Not able to perform a CV measurement')
+            return False
+
         if not self.test_communication():
             return False
         if parameters is None:
             self.abort_measurement('No parameters given')
             return False
-
 
         if type == 'IV': # Check the parameters for the IV measurement
             if parameters['startV'] == parameters['stopV']:
@@ -452,7 +469,7 @@ class Functionality:
                     self.abort_measurement('Measurement aborted by user.')
                     return False
                 
-        return True
+        return True #If all checks are passed, return True
 
     def test_communication(self): #This function tests the communication with the connected devices by sending a *IDN? command and checking if the response is valid. If any of the devices fail, it will disconnect them and give a warning
         for device in self.ui.device_handler.smu_devices:
@@ -473,10 +490,10 @@ class Functionality:
             except:
                 self.abort_measurement(f'Communication with {device.return_assigned_id()} failed. Please reconnect this device and try again.')
                 return
-#        print('All devices are communicating correctly')
         return True
 
-    def abort_measurement(self, reason: str): #This function aborts the measurement and shows a warning message for various cases
+    def abort_measurement(self, reason: str): #This function aborts the measurement and shows a message on why this happened
+        #It is called when the measurement thread emits an error signal or when the user clicks the abort button
         self.ui_changes_stop()
         try:
             self.measurement_thread.abort_measurement()
@@ -484,7 +501,7 @@ class Functionality:
             print('WARNING: Measurement thread could not be stopped', e)
         warning = QMessageBox.warning(self.ui, 'Measurement aborted', 'The following problem has occured and your measurement has been stopped for safety reasons: \n' + reason, QMessageBox.Ok, QMessageBox.Ok)
 
-    def finish_measurement(self): #Function that is called when the measurement is finished ordinally 
+    def finish_measurement(self): #Function that is called when the measurement is finished ordinally (only for IV and CV measurements, as constant voltage measurements are only finished manually)
         self.ui_changes_stop()
         self.data_saver.close()
     
@@ -510,11 +527,11 @@ class Functionality:
         self.ui.canvas.update_plot()
 
     def write_parameters(self, parameters):
-    
+        # This function writes the parameters of the measurement to a file so they can be used later
         filepath = self.ui.folder_path.text()
         filename = self.ui.filename.text()
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        file = os.path.join(filepath, filename+ timestamp + 'Settings' + '.json')
+        file = os.path.join(filepath, filename+ timestamp + '_MeasurementSettings' + '.json')
         device_settings = {}
         for device in self.ui.device_handler.smu_devices:
             device_settings[device.return_assigned_id()] = device.settings
@@ -543,14 +560,12 @@ class Device_Handler:   #Class that handles the devices and their IDs
 
     def find_devices(self):
         self.ports = self.rm.list_resources() # search devices and clear all canidates for that, to prevent double entries
-        print(self.ports)
         self.clear()
 #        self.device_candidates.append(['Dummy Port', 'Dummy Device', 'Dummy']) # Add a dummy device for testing purposes
         for port in self.ports:
             try:
                 device = self.rm.open_resource(port) # Try to open the port 
             except:
-#                print('Could not open port', port) #Debug message
                 continue                    
             #As some devices use different termination characters, we need to try different ones, if "\n" does not work we try "\r"
             device.write_termination = '\n'
@@ -569,6 +584,7 @@ class Device_Handler:   #Class that handles the devices and their IDs
                     print('Could not get ID from', port) #Debug message
                     continue
             # Now we need to sort the devices into their respective categories.
+            # If you want to add a new device, you need to add it here 
             if id in self.used_ids: # Check if the device is already in use
                 print(id, ' already in use')
                 continue

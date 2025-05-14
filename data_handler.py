@@ -49,8 +49,8 @@ class DataSaver:
         data_string = ' '.join(map(str, data)) + '\n'
         try:
             self.file.write(data_string)
-        except:
-            print('Data could not be safed')
+        except Exception as e:
+            print(f'Data {data_string} could not be safed: {e}') 
 
     def close(self):
         #This function closes the file

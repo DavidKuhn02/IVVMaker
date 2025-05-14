@@ -1,13 +1,13 @@
 {
-    "measurement_type": "IV",
+    "measurement_type": "Constant Voltage",
     "IV": {
         "startV": 0.0,
-        "stopV": -200.0,
-        "stepV": -1.0,
-        "measurements_per_step": 5,
-        "time_between_measurements": 0.2,
-        "time_between_steps": 0.5,
-        "limitI": 10.0,
+        "stopV": 0.0,
+        "stepV": 0.0,
+        "measurements_per_step": 1,
+        "time_between_measurements": 0.0,
+        "time_between_steps": 0.0,
+        "limitI": 0.0,
         "custom_sweep": false,
         "custom_sweep_file": ""
     },
@@ -27,9 +27,9 @@
         "custom_sweep_file": ""
     },
     "Constant Voltage": {
-        "constant_voltage": 0,
-        "time_between_measurements": 0,
-        "limitI": 0
+        "constant_voltage": -80.0,
+        "time_between_measurements": 1.0,
+        "limitI": 1.0
     },
-    "darkmode": true
+    "darkmode": false
 }

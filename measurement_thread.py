@@ -9,12 +9,13 @@ class MeasurementThread(QThread):
     finished_signal = pyqtSignal() #signal that is emitted when the measurement is finished or aborted
     error_signal = pyqtSignal(str) #signal that is emitted when an error occurs
 
-    def __init__(self, ui, device_handler):
+    def __init__(self, ui, device_handler): #Set up the thread
         super().__init__()
         self.ui = ui
         self.device_handler = device_handler
     
-    def run(self):#
+    def run(self): #This function is called when the thread is started
+        # Before this function is called, the set_parameters function is called to set the parameters for the measurement
         try:
             self.running = True
             if self.type == 'IV':
@@ -32,20 +33,20 @@ class MeasurementThread(QThread):
     def set_parameters(self, type, parameters):
         self.type = type
         self.parameters = parameters
-
+        # This function is called to set the parameters for the measurement
 
     def start_measurement(self, start):
         #Function that is called when the measurement is started
         #This function sets the voltage and current limits for the SMUs and clears the buffer
         #It also enables the output of the SMUs
-        #and sets the voltage to the start voltage
-        self.running = True
-        for smu in self.device_handler.smu_devices:
+        #and sets the voltage to the start voltage 
+        self.running = True #Flag to indicate that the measurement is running 
+        for smu in self.device_handler.smu_devices:   #Reset the SMUs and set the current limit
             smu.set_limit(float(self.limit_I*1e-6))
             smu.enable_output(True)
             smu.clear_buffer()
-        if start == 0:
-            return
+        if start == 0:   #If the start voltage is not 0, a rampup sequence is started
+            return 
         else:
             self.rampup(start)
 
@@ -67,27 +68,27 @@ class MeasurementThread(QThread):
 
     def run_IV_measurement(self, parameters):
         #Function that is called when the measurement is a IV measurement
-        if parameters['custom_sweep'] == True:
+        if parameters['custom_sweep'] == True:  #Checks wether a sweep needs to be created or read from a file
             self.voltages, self.number_of_measurements = self.read_sweep(parameters['custom_sweep_file'])
-        else:
+        else: #Creates the linear sweep 
             self.voltages, self.number_of_measurements = self.linear_sweep(parameters['startV'], parameters['stopV'], parameters['stepV'], parameters['measurements_per_step'])
         self.time_between_steps = int(parameters['time_between_steps']*1000)
         self.time_between_measurements = int(parameters['time_between_measurements']*1000)
-        self.limit_I = parameters['limitI']
+        self.limit_I = parameters['limitI']  
 
-        self.start_measurement(self.voltages[0])
-        for i in range(len(self.voltages)):
-            if not self.running:
+        self.start_measurement(self.voltages[0]) #The measurement is started with the first voltage
+        for i in range(len(self.voltages)):  #Loops over all voltages
+            if not self.running:  #Checks if the measurement is still running or has been aborted by the user
                 break
-            self.set_voltages(self.voltages[i])
-            QThread.msleep(self.time_between_steps)
-            for j in range(int(self.number_of_measurements[i])):
-                if not self.running:
-                    break
-                data = self.read_data(self.voltages[i])
-                self.send_data(data)
-                QThread.msleep(self.time_between_measurements)
-        if self.running:
+            self.set_voltages(self.voltages[i]) #Set the voltage at the SMUs
+            QThread.msleep(self.time_between_steps)  #Wait for built up charge to flow away 
+            for j in range(int(self.number_of_measurements[i])): #Loop over the number of measurements for this voltage
+                if not self.running:  #Checks if the measurement is still running or has been aborted by the user
+                    break 
+                data = self.read_data(self.voltages[i]) #Accumulate the data from all devices
+                self.send_data(data) #Sends the data to the main thread to be saved
+                QThread.msleep(self.time_between_measurements) #Sleep for the time between measurements
+        if self.running: #  If the measurement is still running, the abort function is called, after the measurement is finished
             self.abort_measurement()
 
     def run_constantV_measurement(self, parameters):
@@ -96,17 +97,17 @@ class MeasurementThread(QThread):
         self.time_between_measurements = int(parameters['time_between_measurements']*1000)
         self.limit_I = parameters['limitI']
 
-        self.start_measurement(self.constant_voltage)
-        while self.running:
-            data = self.read_data(self.constant_voltage)
-            self.send_data(data)
-            QThread.msleep(self.time_between_measurements)
+        self.start_measurement(self.constant_voltage) #Start the measurement with the constant voltage
+        while self.running: #Continuously measure the current at the constant voltage as long as the measurement flag is set to True
+            data = self.read_data(self.constant_voltage) #Accumulate the data from all devices
+            self.send_data(data) #Sends the data to the main thread to be saved
+            QThread.msleep(self.time_between_measurements) #Sleep for the time between measurements
 
     def run_cv_measurement(self, parameters):
         #This function is used to do CV measurements. This works only with a HAMEG 8118 connected.
-        if parameters['custom_sweep'] == True:
+        if parameters['custom_sweep'] == True: #Checks wether a sweep needs to be created or read from a file
             self.voltages, self.number_of_measurements, self.frequencies = self.read_frequency_sweep(parameters['custom_sweep_file'])
-        else:
+        else: #Creates the sweep (log or linear)
             if parameters['logarithmic_frequency_steps'] == True:
                 self.voltages, self.number_of_measurements, self.frequencies = self.frequency_sweep_log(parameters['startV'], parameters['stopV'], parameters['stepV'], parameters['measurements_per_step'], parameters['startFrequency'], parameters['stopFrequency'], parameters['number_of_frequencies'])
             else:
@@ -114,22 +115,23 @@ class MeasurementThread(QThread):
         self.time_between_steps = int(parameters['time_between_steps']*1000)
         self.time_between_measurements = int(parameters['time_between_measurements']*1000)
         self.limit_I = parameters['limitI']
-        self.start_measurement(self.voltages[0])
-        for i in range(len(self.voltages)):
-            if not self.running:
+        self.start_measurement(self.voltages[0]) #The measurement is started with the first voltage
+        for i in range(len(self.voltages)): #Loops over all voltages
+            if not self.running: #Checks if the measurement is still running or has been aborted by the user
                 break
-            self.set_voltages(self.voltages[i])
-            QThread.msleep(self.time_between_steps)
+            self.set_voltages(self.voltages[i]) #Set the voltage at the SMUs
+            QThread.msleep(self.time_between_steps) #Wait for built up charge to flow away
 
-            for j in range(len(self.frequencies)):              
-                if not self.running:
+            for j in range(len(self.frequencies)): #Loops over all frequencies at this voltage
+                if not self.running: #Checks if the measurement is still running or has been aborted by the user
                     break
-                self.set_frequencies(self.frequencies[j])
-                data = self.read_data(self.voltages[i], self.frequencies[j])
-                self.send_data(data)
-                QThread.msleep(self.time_between_measurements)
-
-
+                self.set_frequencies(self.frequencies[j]) #Set the frequency at the capacitance meter
+                data = self.read_data(self.voltages[i], self.frequencies[j]) #Accumulate the data from all devices
+                self.send_data(data) #Sends the data to the main thread to be saved
+                QThread.msleep(self.time_between_measurements) #Sleep for the time between measurements
+        if self.running:
+            self.abort_measurement()
+        #If the measurement is still running, the abort function is called, after the measurement is finished
         return 
 
 
@@ -153,8 +155,9 @@ class MeasurementThread(QThread):
             data.append(U)
             data.append(I)
 
-        for capacitance_unit in self.device_handler.capacitancemeter_devices: #measure the capacitance
-            impedance, phase = capacitance_unit.read_output()
+        for capacitance_unit in self.device_handler.capacitancemeter_devices: 
+            frequency = capacitance_unit.measure_frequency() # Measure the frequency that is set at the capacitance meter
+            impedance, phase = capacitance_unit.measure()  #Returns the impedance and phase of the capacitance meter
             data.append(impedance)
             data.append(phase)
             data.append(frequency)
