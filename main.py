@@ -5,7 +5,6 @@ import pyvisa as visa
 
 ResourceManager = visa.ResourceManager('@py') # Set up the resource manager
 
-
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = Ui_MainWindow(rm=ResourceManager)
