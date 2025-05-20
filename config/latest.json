@@ -1,5 +1,5 @@
 {
-    "measurement_type": "Constant Voltage",
+    "measurement_type": "IV",
     "IV": {
         "startV": 0.0,
         "stopV": 0.0,

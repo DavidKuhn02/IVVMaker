@@ -142,7 +142,7 @@ class ParameterDiaglog_K2400(QDialog):
             self.logic.open_parameter_dialogs.remove(self)
 
 class ParameterDialog_K2000(QDialog):
-    def __init__(self, device, id, rm):
+    def __init__(self, device, id, rm, logic):
         super().__init__()
         self.setWindowTitle(f'Advanced Settings for {id}') 
         self.setGeometry(320, 180, 400, 300)
@@ -282,7 +282,7 @@ class ParameterDialog_K2000(QDialog):
 
 
 class ParameterDialog_K2600(QDialog):
-    def __init__(self, device, id, rm):
+    def __init__(self, device, id, rm, logic):
         super().__init__()
         self.setWindowTitle(f'Advanced Settings for {id}') 
         self.setGeometry(320, 180, 400, 300)
