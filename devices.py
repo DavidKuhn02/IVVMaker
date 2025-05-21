@@ -293,6 +293,16 @@ class K2600: #K2600 SMU (up to 200V bias Voltage)
         self.port = port
         self.assigned_id = id
         self.reset()
+        self.settings = { #Standard settings for the Keithley 2600 (loaded when the device is connected)
+            'voltage_range': 'Auto',
+            'current_range': 'Auto',
+            'nplc': 1,
+            'high_capacitance': False,
+            'use_filter': False,
+            'filter_num': 10,
+            'filter_type': 'Moving Average',
+            'auto_zero': True,
+        }
 
     def reset(self):
         self.set_voltage(0)
@@ -343,7 +353,7 @@ class K2600: #K2600 SMU (up to 200V bias Voltage)
             self.device.write('smua.source.autorangev = smua.AUTORANGE_OFF')
             self.device.write('smua.source.rangev = {}'.format(range))
 
-    def update_filter(self, filter, filter_type, filter_num):
+    def set_filter(self, filter, filter_type, filter_num):
         self.device.write(f'smua.measure.filter.count = {str(filter_num)}')
         if filter_type == 'Moving Average':
             self.device.write('smua.measure.filter.type = smua.FILTER_MOVING_AVG')
