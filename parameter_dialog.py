@@ -149,6 +149,7 @@ class ParameterDialog_K2000(QDialog):
         self.setup_ui()
         self.device = device
         self.rm = rm
+        self.logic = logic
         self.load_settings(self.device.settings)
         
     def setup_ui(self):
@@ -279,7 +280,8 @@ class ParameterDialog_K2000(QDialog):
             'filter_num': self.filter_num.value(),
             'filter_type': self.filter_type.currentText()
         }
-
+        if self in self.logic.open_parameter_dialogs:
+            self.logic.open_parameter_dialogs.remove(self)
 
 class ParameterDialog_K2600(QDialog):
     def __init__(self, device, id, rm, logic):
@@ -290,6 +292,7 @@ class ParameterDialog_K2600(QDialog):
         self.device = device
         self.rm = rm
         self.load_settings(self.device.settings)
+        self.logic = logic
         self.finished.connect(self.save_settings)
 
     def setup_ui(self):
@@ -391,7 +394,8 @@ class ParameterDialog_K2600(QDialog):
             'filter_type': self.filter_type.currentText(),
             'high_capacitance': self.high_capacitance.isChecked()
         }
-    
+        if self in self.logic.open_parameter_dialogs:
+            self.logic.open_parameter_dialogs.remove(self)
 
 
 

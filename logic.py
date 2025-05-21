@@ -83,7 +83,7 @@ class Functionality:
             elif 'Keithley K2400 SMU' in candidate[2]:
                 device = devices.K2400(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
-            elif 'Keithley K2611 SMU' in candidate[2]:
+            elif 'Keithley K2600 SMU' in candidate[2]:
                 device = devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
             elif 'Keithley K6487 SMU' in candidate[2]:
@@ -124,7 +124,7 @@ class Functionality:
             elif 'Keithley K2400 SMU' in candidate[2]:
                 device = devices.K2400(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
-            elif 'Keithley K2611 SMU' in candidate[2]:
+            elif 'Keithley K2600 SMU' in candidate[2]:
                 device = devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
                 self.ui.device_handler.smu_devices.append(device)
             elif 'Keithley K6487 SMU' in candidate[2]:
@@ -155,7 +155,6 @@ class Functionality:
         device_widget = QFrame()
         device_widget.setFrameShape(QFrame.Box)
         device_layout = QGridLayout()
-        device_widget.setLayout(device_layout) 
         
         device_layout.addWidget(QLabel(candidate[1]), 0, 0, 1, 3)  #Add the ID to the Layout
     
@@ -176,7 +175,13 @@ class Functionality:
             advanced_settings = QPushButton('Advanced Settings')
             advanced_settings.clicked.connect(lambda : self.open_parameter_dialog(device, candidate[1], candidate[2]))
             device_layout.addWidget(advanced_settings, 2, 0, 1, 3)
+        if candidate[2] == 'Keithley K2600 SMU':  # Add the pop up window to allow for advanced settings for the Keithley K2600 SMUs
+            print('Keithley 2600 SMU')
+            advanced_settings = QPushButton('Advanced Settings')
+            advanced_settings.clicked.connect(lambda : self.open_parameter_dialog(device, candidate[1], candidate[2]))
+            device_layout.addWidget(advanced_settings, 2, 0, 1, 3)
         
+        device_widget.setLayout(device_layout) 
         return device_widget
 
     def open_parameter_dialog(self, device, id, type):
@@ -188,6 +193,10 @@ class Functionality:
             self.open_parameter_dialogs.append(dialog)
         if type == 'Keithley K2400 SMU':
             dialog = parameter_dialog.ParameterDiaglog_K2400(device, id, self.ui.rm, self)
+            dialog.show()
+            self.open_parameter_dialogs.append(dialog)
+        if type == 'Keithley K2600 SMU':
+            dialog = parameter_dialog.ParameterDialog_K2600(device, id, self.ui.rm, self)
             dialog.show()
             self.open_parameter_dialogs.append(dialog)
         
@@ -581,7 +590,7 @@ class Device_Handler:   #Class that handles the devices and their IDs
                 try:
                     id = device.query('*IDN?').strip('').strip('') #Try again if the device is not responding with "\n" terminations  
                 except:
-                    print('Could not get ID from', port) #Debug message
+                    #print('Could not get ID from', port) #Debug message
                     continue
             # Now we need to sort the devices into their respective categories.
             # If you want to add a new device, you need to add it here 
@@ -593,7 +602,7 @@ class Device_Handler:   #Class that handles the devices and their IDs
             elif 'KEITHLEY' in id and ('2470' in id or '2450' in id):
                 self.device_candidates.append([port, id, 'Keithley K2400 SMU'])
             elif 'Keithley' in id and '2611' in id:
-                self.device_candidates.append([port, id, 'Keithley K2611 SMU'])
+                self.device_candidates.append([port, id, 'Keithley K2600 SMU'])
             elif 'KEITHLEY' in id and 'MODEL 6487' in id:
                 self.device_candidates.append([port, id, 'Keithley K6487 SMU'])
             elif 'KEITHLEY' in id and '2000'in id:
@@ -607,7 +616,7 @@ class Device_Handler:   #Class that handles the devices and their IDs
             else:
                 self.device_candidates.append([port, id, 'Uncharacterized'])
             device.close()
-
+        print('Found devices:', self.device_candidates)
         return np.array(self.device_candidates)
 
     def clear(self):

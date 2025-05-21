@@ -27,9 +27,9 @@
         "custom_sweep_file": ""
     },
     "Constant Voltage": {
-        "constant_voltage": -80.0,
-        "time_between_measurements": 1.0,
-        "limitI": 1.0
+        "constant_voltage": 0,
+        "time_between_measurements": 0,
+        "limitI": 0
     },
     "darkmode": false
 }
