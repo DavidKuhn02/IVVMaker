@@ -172,8 +172,6 @@ class MeasurementThread(QThread):
         #Function to set the frequency for all capacitance meters
         for device in self.device_handler.capacitancemeter_devices: #set the frequency for each capacitance meter
             device.set_frequency(frequency)
-
-
     def abort_measurement(self):
         #Function to abort the measurement
         #This function is called when the measurement is aborted or finished

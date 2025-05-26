@@ -376,7 +376,7 @@ class Functionality:
         
         self.ui.canvas.clear_live_data() #Clear the live data from the plot
         self.ui_changes_start() #Change the UI to show that the measurement is running
-    
+        
         if self.ui.measurement_type == 'IV':  #Start IV measurement
             self.write_parameters(self.ui.IV_settings)
             self.measurement_thread.set_parameters('IV', self.ui.IV_settings)
@@ -400,13 +400,15 @@ class Functionality:
             self.measurement_thread.start() #Start the measurement thread
 
     def receive_data(self, data):
-      
-        if len(data) > 2: #Check if the data is valid
-            self.data_saver.write_data(data)
-            self.ui.canvas.update_data(data[1], data[2]) #update the plot with the new data
-            self.ui.canvas.draw_plot() #draw the plot with the new data
-            self.ui.live_current_data.setText(f'{data[2]*1e9:.3f} nA') #Set the live data to the UI
-            self.ui.live_voltage_data.setText(f'{data[1]:.3f} V')
+        self.data_saver.write_data(data)
+        self.ui.canvas.draw_plot() #draw the plot with the new data
+        self.ui.live_current_data.setText(f'{data[2]*1e9:.3f} nA') #Set the live data to the UI
+        self.ui.live_voltage_data.setText(f'{data[1]:.3f} V')
+        
+        if self.ui.measurement_type == 'IV' or self.ui.measurement_type == 'Constant Voltage':
+            self.ui.canvas.update_data(data[1], data[2]) #update the plot with the new data    
+        elif self.ui.measurement_type == 'CV':
+            self.ui.canvas.update_data(data[-1], data[-3], data[-2]) #update the plot with the new data, for CV measurements we have an additional phase data (As the data for the LCR Bridge is the last entry in the list)
 
     def file_exists_error(self): #Handles the case when the file already exists
         self.ui.abort_button.setEnabled(False)
