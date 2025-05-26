@@ -341,10 +341,10 @@ class K2600: #K2600 SMU (up to 200V bias Voltage)
 
     def set_current_range(self, range):
         if range == 'Auto':
-            self.device.write('smua.source.autorangei = smua.AUTORANGE_ON')
+            self.device.write('smua.measure.autorangei = smua.AUTORANGE_ON')
         else:
-            self.device.write('smua.source.autorangei = smua.AUTORANGE_OFF')
-            self.device.write('smua.source.rangei = {}'.format(range))
+            self.device.write('smua.measure.autorangei = smua.AUTORANGE_OFF')
+            self.device.write('smua.measure.rangei = {}'.format(range))
 
     def set_voltage_range(self, range):
         if range == 'Auto':
