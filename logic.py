@@ -401,7 +401,6 @@ class Functionality:
 
     def receive_data(self, data):
         self.data_saver.write_data(data)
-        self.ui.canvas.draw_plot() #draw the plot with the new data
         self.ui.live_current_data.setText(f'{float(data[2])*1e9:.3f} nA') #Set the live data to the UI
         self.ui.live_voltage_data.setText(f'{float(data[1]):.3f} V')
         
@@ -409,6 +408,7 @@ class Functionality:
             self.ui.canvas.update_data(data[1], data[2]) #update the plot with the new data    
         elif self.ui.measurement_type == 'CV':
             self.ui.canvas.update_data(data[-1], data[-3], data[-2]) 
+        self.ui.canvas.draw_plot() #draw the plot with the new data
 
     def file_exists_error(self): #Handles the case when the file already exists
         self.ui.abort_button.setEnabled(False)
