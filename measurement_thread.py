@@ -143,24 +143,25 @@ class MeasurementThread(QThread):
         for smu in self.device_handler.smu_devices: #measure the voltage and current for each SMU
             voltage_smu = smu.measure_voltage() 
             current_smu = smu.measure_current()
-            data.append(voltage_smu)
-            data.append(current_smu)
+            data.append(float(voltage_smu))
+            data.append(float(current_smu))
         
         for voltage_unit in self.device_handler.voltmeter_devices: #measure the quantities for each voltmeter
             quantity = voltage_unit.measure()
-            data.append(quantity)
+            data.append(float(quantity))
 
         for lowV_unit in self.device_handler.lowV_devices: #read the power drawn by the devices at the lowV power supplies (iterates over all channels)
             U, I = lowV_unit.read_output()
-            data.append(U)
-            data.append(I)
+            data.append(float(U))
+            data.append(float(I))
 
         for capacitance_unit in self.device_handler.capacitancemeter_devices: 
             frequency = capacitance_unit.measure_frequency() # Measure the frequency that is set at the capacitance meter
-            impedance, phase = capacitance_unit.measure()  #Returns the impedance and phase of the capacitance meter
-            data.append(impedance)
-            data.append(phase)
-            data.append(frequency)
+            impedance, phase = capacitance_unit.measure() #Returns the impedance and phase of the capacitance meter
+
+            data.append(float(impedance))
+            data.append(float(phase))
+            data.append(float(frequency))
         return data
     
     def set_voltages(self, voltage):

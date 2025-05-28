@@ -68,10 +68,12 @@ class PlotCanvas(FigureCanvas):
     
     def update_data(self, x_data, y_data, y_data2 = None):
         #This function will update the data of the plot
-        self.live_x_data.append(x_data)
-        self.live_y_data.append(y_data)  
+        self.live_x_data.append(float(x_data))
+        self.live_y_data.append(float(y_data))  
         if y_data2 is not None:
             self.live_y_data2.append(y_data2)
+
+
     def change_plot_type(self, type):
         #This function will change the plot type
         self.parameters['type'] = type

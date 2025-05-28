@@ -385,6 +385,8 @@ class K6487: #K6487 Voltage source/piccoammeter
         self.assigned_id = id
         self.reset()
         self.voltage = 0 #As the device can only measure current, the voltage that is returned is the same as the set voltage.
+        self.settings = { #Standard settings for the Keithley 6487 (loaded when the device is connected)
+            }
     
     def reset(self):
         self.device.write('*RST')
@@ -442,6 +444,8 @@ class LowVoltagePowerSupplies: #Rhode&Schwarz NGE 100 and HAMEG HMP4040
         else:
             self.number_of_channels = 3
         self.port = port
+        self.settings = { #Standard settings for the Keithley 6487 (loaded when the device is connected)
+            }
 
     def reset(self):
         self.device.write('RST*')
@@ -482,6 +486,8 @@ class Hameg8118:
         self.assigned_id = id
         self.clear_buffer()
         self.device.write('PMOD 6') # Sets the device to measure Impedance and Phase
+        self.settings = { #Standard settings for the Keithley 6487 (loaded when the device is connected)
+            }
 
     def reset(self):
         pass #Does not work on Hameg8118 (breaks the communication)
@@ -511,14 +517,20 @@ class Hameg8118:
         pass 
     
     def measure_frequency(self):
-        return self.query_failsave('FREQ?')
+        frequency = self.query_failsave('FREQ?')
+        print(f'Measured frequency: {frequency}')
+
+        return frequency 
     
     def measure(self):
         values = self.query_failsave('XALL?')
+        print(f'Raw values: {values}')
         if values == 'Error':
             return 0, 0
-        return values.split(',')[0:1]
-        #Returns impedance and phase angle (in degrees) 
+        
+        impedance, phase, _ = values.split(',')
+
+        return impedance, phase # Returns phase angle in degrees and impedance in Ohm
         
     def query_failsave(self, command):
         # This function is used to query the device and handle timeouts
