@@ -112,7 +112,6 @@ class ParameterDiaglog_K2400(QDialog):
         self.device.set_auto_zero(self.auto_zero.isChecked())
     
     def load_settings(self, settings):
-        print(settings)
         if settings is None:
             return
         try:
