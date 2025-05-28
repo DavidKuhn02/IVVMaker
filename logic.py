@@ -176,7 +176,6 @@ class Functionality:
             advanced_settings.clicked.connect(lambda : self.open_parameter_dialog(device, candidate[1], candidate[2]))
             device_layout.addWidget(advanced_settings, 2, 0, 1, 3)
         if candidate[2] == 'Keithley K2600 SMU':  # Add the pop up window to allow for advanced settings for the Keithley K2600 SMUs
-            print('Keithley 2600 SMU')
             advanced_settings = QPushButton('Advanced Settings')
             advanced_settings.clicked.connect(lambda : self.open_parameter_dialog(device, candidate[1], candidate[2]))
             device_layout.addWidget(advanced_settings, 2, 0, 1, 3)
@@ -206,7 +205,6 @@ class Functionality:
         #Function for the device widget to reset the device
         try: 
             device.reset()
-            print('Resetting', device.return_id())
         except:
             pass 
     
@@ -215,7 +213,6 @@ class Functionality:
         #This is not implemented for all devices, only for the ones that are supported
         try:
             device.clear_buffer()
-            print('Clearing Buffer of', device.return_id())
         except:
             pass
 
@@ -223,7 +220,6 @@ class Functionality:
         #Function for the device widget to remove the device from the list of used devices
         #Remove the device from the list of used devices and delete the widget, this device can now be selected again
         self.ui.device_handler.used_ids.remove(id)
-        print('Removing', id)
         if widget in self.ui.device_widgets:
             self.ui.device_widgets.remove(widget)
             widget.deleteLater()
@@ -309,7 +305,7 @@ class Functionality:
         'custom_sweep_file': self.ui.custom_sweep_file.text(),
              }
             except Exception as e:
-                print('Error updating measurement settings', e)
+                raise e
                     
         elif self.ui.measurement_type == 'CV':
             try:
@@ -329,8 +325,7 @@ class Functionality:
         'custom_sweep_file': self.ui.custom_sweep_file.text(),
             }
             except Exception as e:
-                print('Error updating measurement settings', e)
-
+                raise e
         elif self.ui.measurement_type == 'Constant Voltage':
             try:
                 self.ui.constantV_settings = { # Dict to store the settings for the Constant Voltage measurement
@@ -339,7 +334,7 @@ class Functionality:
             'limitI': self.ui.limitI_spinBox.value(),
             }
             except Exception as e:
-                print('Error updating measurement settings', e)
+                raise e
 
     def start_measurement(self):
         #This function starts the measurement and creates the data saver object
