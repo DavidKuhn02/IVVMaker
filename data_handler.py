@@ -4,15 +4,18 @@ import datetime
 class DataSaver:
     #This class is responsible for saving the data to a file
     #It creates the file and writes the data to it
-    def __init__(self, filepath, filename, ui, functionality):
+    def __init__(self, filepath, filename, use_timestamp, ui, functionality):
         self.functionality = functionality
         self.ui = ui
-        self.create_file(filepath=filepath, filename=filename)
+        self.create_file(filepath=filepath, filename=filename, use_timestamp=use_timestamp)
         
-    def create_file(self, filepath, filename):  
+    def create_file(self, filepath, filename, use_timestamp = True):  
         #This function creates the file and writes the header to it
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.filepath = os.path.join(filepath, filename + '_' + timestamp + self.ui.filename_suffix.currentText())
+        if use_timestamp:
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            self.filepath = os.path.join(filepath, filename + '_' + timestamp + self.ui.filename_suffix.currentText())
+        else:
+            self.filepath = os.path.join(filepath, filename + self.ui.filename_suffix.currentText())
         try:
             self.file = open(self.filepath, 'x', buffering=1)
             self.write_header()

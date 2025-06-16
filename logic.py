@@ -356,6 +356,7 @@ class Functionality:
             self.data_saver = data_handler.DataSaver(   #start the data save thread 
                 filepath = self.ui.folder_path.text(),
                 filename = self.ui.filename.text(),
+                use_timestamp = self.ui.use_timestamp_checkBox.isChecked(),
                 ui = self.ui,
                 functionality = self)
             
@@ -370,6 +371,7 @@ class Functionality:
             pass  # No existing connection, safe to proceed
         
         self.ui.canvas.clear_live_data() #Clear the live data from the plot
+        self.ui.canvas.change_plot_type(self.ui.measurement_type) #Change the plot type to the new measurement type, this also resets the plot
         self.ui_changes_start() #Change the UI to show that the measurement is running
         
         if self.ui.measurement_type == 'IV':  #Start IV measurement
@@ -536,8 +538,11 @@ class Functionality:
         # This function writes the parameters of the measurement to a file so they can be used later
         filepath = self.ui.folder_path.text()
         filename = self.ui.filename.text()
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        file = os.path.join(filepath, filename+ timestamp + '_MeasurementSettings' + '.json')
+        if self.ui.use_timestamp_checkBox.isChecked():
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            file = os.path.join(filepath, filename+ '_' +  timestamp + '_MeasurementSettings' + '.json')
+        else:
+            file = os.path.join(filepath, filename + '_MeasurementSettings' + '.json')
         device_settings = {}
         for device in self.ui.device_handler.smu_devices:
             device_settings[device.return_assigned_id()] = device.settings

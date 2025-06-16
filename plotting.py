@@ -84,7 +84,6 @@ class PlotCanvas(FigureCanvas):
         self.old_x_data = []
         self.old_y_data = []
         self.old_y_data2 = []
-
         self.fig.clear()  # Clear the figure   
         if type == 'IV':
             self.ax = self.fig.add_subplot(111)  # Add a new subplot
