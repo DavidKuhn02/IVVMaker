@@ -149,21 +149,26 @@ class Ui_MainWindow(QWidget):
         self.savefile_settings_layout.setAlignment(QtCore.Qt.AlignTop)
 
         self.folder_path = QLineEdit()    #Folder path for the data
-        self.savefile_settings_layout.addWidget(self.folder_path, 0, 0)
+        self.savefile_settings_layout.addWidget(self.folder_path, 0, 0, 1, 2)
         self.folder_path.setText(data_path) #Default path is the current working directory /data
 
         self.search_folder_path = QPushButton('...')   #Button to select the folder path
         self.search_folder_path.clicked.connect(self.logic.select_folder)
-        self.savefile_settings_layout.addWidget(self.search_folder_path, 0, 1)
+        self.savefile_settings_layout.addWidget(self.search_folder_path, 0, 2)
 
         self.filename = QLineEdit() #Filename for the datafile
         self.filename.setPlaceholderText('Enter filename')
         self.savefile_settings_layout.addWidget(self.filename, 1, 0)
 
+        self.use_timestamp_checkBox = QCheckBox('Timestamp')  #Checkbox to use a timestamp in the filename
+        self.use_timestamp_checkBox.setChecked(True)
+        self.use_timestamp_checkBox.setToolTip('If checked, the filename will include a timestamp')
+        self.savefile_settings_layout.addWidget(self.use_timestamp_checkBox, 1, 1)
+
         self.filename_suffix = QComboBox()   #Select the file suffix (default is .csv)
         self.filename_suffix.addItems(['.csv', '.dat', '.txt'])
         self.filename_suffix.setCurrentIndex(0)
-        self.savefile_settings_layout.addWidget(self.filename_suffix, 1, 1)
+        self.savefile_settings_layout.addWidget(self.filename_suffix, 1, 2)
 
         self.savefile_settings_box.setLayout(self.savefile_settings_layout)
         self.layout.addWidget(self.savefile_settings_box, 5, 0, 1, 1) #Add the group box to the layout
