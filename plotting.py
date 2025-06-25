@@ -5,7 +5,9 @@ from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtCore import Qt
 import matplotlib.pyplot as plt
 import numpy as np
-
+import pandas as pd
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from matplotlib.gridspec import GridSpec
 
 class PlotCanvas(FigureCanvas):
     def __init__(self, parent=None):
@@ -23,33 +25,53 @@ class PlotCanvas(FigureCanvas):
             
         }
         self.live_x_data = [] # Voltage for IV and CV, Number of Measurements for Constant Voltage
-        self.live_y_data = [] # Current for IV and Constant Voltage, Impedance for CV
-        self.live_y_data2 = []  # Only for CV, to store the second y-axis data (phase)
-        self.draw_plot() #Draw the initial plot
+        self.live_y_data = [] # Current for IV and Constant Voltage
+        self.raw_data = [] #Array that holds CV data
+        self.voltage_cv = []
+        self.frequencies_cv = []
+        self.impedance_cv = [] 
+        self.phase_cv = []
 
     def draw_plot(self):
         #This function will redraw the plot with the current data
         if self.parameters['type'] == 'CV':
-            live_data_lines1 = [line for line in self.ax1.lines if line.get_label() == 'Live Data']
-            live_data_lines2 = [line for line in self.ax2.lines if line.get_label() == 'Live Data']
-            for line in live_data_lines1:
-                line.remove()
-            for line in live_data_lines2:
-                line.remove()
-            self.fig.suptitle(self.parameters['type'] + ' Measurement')
-            self.ax1.set_xlabel(self.parameters['x_label'])
-            self.ax2.set_xlabel(self.parameters['x_label'])
-            self.ax1.set_ylabel(self.parameters['y_label1'])
-            self.ax2.set_ylabel(self.parameters['y_label2'])
-            self.ax1.plot(np.array(self.live_x_data), np.array(self.live_y_data), label=self.parameters['labels'][0], linestyle ='None', marker='o', color = 'tab:blue')
-            self.ax2.plot(np.array(self.live_x_data), np.array(self.live_y_data2), label=self.parameters['labels'][0], linestyle ='None', marker='o', color = 'tab:blue')
-            self.ax1.set_xscale('log')
-            self.ax2.set_xscale('log')
+            self.ax1.clear()
+            self.ax2.clear()
+            self.colorbar1.clear()
+            self.colorbar2.clear() 
+
+            im1 = self.ax1.scatter(np.array(self.frequencies_cv), np.array(self.impedance_cv), c = np.array(self.voltage_cv), cmap='rainbow')
+            im2 = self.ax2.scatter(np.array(self.frequencies_cv), np.array(self.phase_cv), c = np.array(self.voltage_cv), cmap='rainbow')
+
+            cbar1 = self.fig.colorbar(im1, self.colorbar1, orientation='horizontal')
+            cbar2 = self.fig.colorbar(im2, self.colorbar2, orientation='horizontal')
+
+            cbar1.set_label(label = 'Voltage [V]', loc = 'center')
+            cbar2.set_label(label = 'Voltage [V]', loc = 'center')
+
+            self.colorbar1.xaxis.set_label_position('top')
+            self.colorbar1.xaxis.set_ticks_position('top')
+
+            self.colorbar2.xaxis.set_label_position('top')
+            self.colorbar2.xaxis.set_ticks_position('top')
+
+
+
+            self.ax1.set_xlabel('Frequency [Hz]')
+            self.ax1.set_ylabel('Impedance [Ω]')
+            self.ax2.set_xlabel('Frequency [Hz]')
+            self.ax2.set_ylabel('Phase [°]')
+
             self.ax1.grid(True)
             self.ax2.grid(True)
-            self.ax1.legend()
-            self.ax2.legend()   
 
+            try:
+                self.ax1.set_xscale('log')
+                self.ax2.set_xscale('log')
+            
+            except:
+                pass
+            self.fig.tight_layout(rect=[0, 0, 0.95, 1])
         else:
             live_data_lines = [line for line in self.ax.lines if line.get_label() == 'Live Data']
             for line in live_data_lines:
@@ -63,27 +85,35 @@ class PlotCanvas(FigureCanvas):
                 self.ax.plot(np.arange(len(self.live_y_data)), np.array(self.live_y_data), label=self.parameters['labels'][0], linestyle ='None', marker='o', color = 'tab:blue')
             self.ax.grid(True)
             self.ax.legend()
-        self.fig.tight_layout()  # Adjust layout to prevent overlap
+            self.fig.tight_layout()
+        
         self.draw()
     
-    def update_data(self, x_data, y_data, y_data2 = None):
+    def update_data(self, x_data, y_data):
         #This function will update the data of the plot
         self.live_x_data.append(float(x_data))
         self.live_y_data.append(float(y_data))  
-        if y_data2 is not None:
-            self.live_y_data2.append(y_data2)
 
+    def update_cv_data(self, voltage, frequency, impedance, phase):
+        self.voltage_cv.append(float(voltage))
+        self.frequencies_cv.append(float(frequency))
+        self.impedance_cv.append(float(impedance))
+        self.phase_cv.append(float(phase))
 
+        
     def change_plot_type(self, type):
         #This function will change the plot type
         self.parameters['type'] = type
         self.parameters['labels'] = ['Live Data']
         self.live_x_data = []  #Clear all the data 
         self.live_y_data = []
-        self.live_y_data2 = []
         self.old_x_data = []
         self.old_y_data = []
-        self.old_y_data2 = []
+        self.voltage_cv = []
+        self.frequencies_cv = []
+        self.impedance_cv = [] 
+        self.phase_cv = []  
+
         self.fig.clear()  # Clear the figure   
         if type == 'IV':
             self.ax = self.fig.add_subplot(111)  # Add a new subplot
@@ -91,23 +121,28 @@ class PlotCanvas(FigureCanvas):
             self.parameters['y_label'] = 'Current [A]'
             self.ax.autoscale_view()
         elif type == 'CV':
-            self.ax1 = self.fig.add_subplot(121)  # Add a new subplot for the first y-axis
-            self.ax2 = self.fig.add_subplot(122)  # Add a new subplot for the second y-axis
-            self.parameters['x_label'] = 'Frequency [Hz]'
-            self.parameters['y_label1'] = 'Impedance [Ohm]'
-            self.parameters['y_label2'] = 'Phase [°]'
+            gs = GridSpec(2, 2, height_ratios=[1,20], hspace=0.02)
+            self.ax1 = self.fig.add_subplot(gs[1, 0])
+            self.ax2 = self.fig.add_subplot(gs[1, 1])
+
+            self.colorbar1 = self.fig.add_subplot(gs[0, 0]) # Position for colorbar
+            self.colorbar2 = self.fig.add_subplot(gs[0, 1])
             self.ax.autoscale_view()
         elif type == 'Constant Voltage':
             self.ax = self.fig.add_subplot(111)
             self.parameters['x_label'] = 'Number of Measurements'
             self.parameters['y_label'] = 'Current [A]'
             self.ax.autoscale_view()
-        self.draw_plot()
+        self.draw_plot()    
     
     def clear_live_data(self):
         #This function will clear the live data
         self.live_x_data = []
         self.live_y_data = []
+        self.voltage_cv = []  
+        self.frequencies_cv = [] 
+        self.impedance_cv = [] #Only for CV to store impedance data
+        self.phase_cv = [] #Only for CV to store phase data
         self.draw_plot()
 
     def clear_old_data(self):
@@ -127,7 +162,7 @@ class PlotCanvas(FigureCanvas):
                 self.old_x_data, self.old_y_data = np.loadtxt(file, delimiter=' ', unpack=True, skiprows=1, usecols = [1, 2])
                 self.ax.plot(np.array(self.old_x_data), np.array(self.old_y_data), label=str(file), linestyle ='None', marker='o')   
             elif self.parameters['type'] == 'CV':
-                print('This function is not implemented yet for CV Measurements.')
+                print('This function is not available for CV Measurements.')
             elif self.parameters['type'] == 'Constant Voltage': 
                 self.old_x_data, self.old_y_data = np.loadtxt(file, delimiter=' ', unpack=True, skiprows=1, usecols = [1, 2])
                 self.ax.plot(np.arange(len(self.old_y_data)), np.array(self.old_y_data), label=str(file), linestyle ='None', marker='o')
