@@ -540,6 +540,11 @@ class Hameg8118:
         try:
             ans = self.device.query(command)
             ans = ans.strip('\n')
+            if ans == 'ERROR':
+                ans = self.decive.query(command) # If the device returns an error, try to query again
+                ans = ans.strip('\n')
+
+                
         except pyvisa.errors.VisaIOError as e:
             if 'timeout' in str(e):
                 print(f'{self.id} timeout, trying to reconnect.')

@@ -37,41 +37,40 @@ class PlotCanvas(FigureCanvas):
         if self.parameters['type'] == 'CV':
             self.ax1.clear()
             self.ax2.clear()
-            self.colorbar1.clear()
-            self.colorbar2.clear() 
+            self.ax3.clear()
+            self.ax4.clear()
+            
+            self.ax1.plot(self.voltage_cv, self.phase_cv, label='Phase', linestyle='none', marker = 'o', color='tab:blue')
+            self.ax3.plot(self.voltage_cv, self.impedance_cv, label='Impedance', linestyle='none', marker = 'o', color='tab:orange')
+            self.ax2.plot(self.frequencies_cv, self.phase_cv, label='Phase', linestyle='none', marker = 'o', color='tab:blue')
+            self.ax4.plot(self.frequencies_cv, self.impedance_cv, label='Impedance', linestyle='none', marker = 'o', color='tab:orange')
+            
+            self.ax1.set_title('CV Voltage')
+            self.ax2.set_title('CV Frequency')
 
-            im1 = self.ax1.scatter(np.array(self.frequencies_cv), np.array(self.impedance_cv), c = np.array(self.voltage_cv), cmap='rainbow')
-            im2 = self.ax2.scatter(np.array(self.frequencies_cv), np.array(self.phase_cv), c = np.array(self.voltage_cv), cmap='rainbow')
-
-            cbar1 = self.fig.colorbar(im1, self.colorbar1, orientation='horizontal')
-            cbar2 = self.fig.colorbar(im2, self.colorbar2, orientation='horizontal')
-
-            cbar1.set_label(label = 'Voltage [V]', loc = 'center')
-            cbar2.set_label(label = 'Voltage [V]', loc = 'center')
-
-            self.colorbar1.xaxis.set_label_position('top')
-            self.colorbar1.xaxis.set_ticks_position('top')
-
-            self.colorbar2.xaxis.set_label_position('top')
-            self.colorbar2.xaxis.set_ticks_position('top')
-
-
-
-            self.ax1.set_xlabel('Frequency [Hz]')
-            self.ax1.set_ylabel('Impedance [Ω]')
+            self.ax1.set_xlabel('Voltage [V]')
             self.ax2.set_xlabel('Frequency [Hz]')
+            self.ax3.set_xlabel('Voltage [V]')
+            self.ax4.set_xlabel('Frequency [Hz]')
+            self.ax1.set_ylabel('Phase [°]')
             self.ax2.set_ylabel('Phase [°]')
+            self.ax3.set_ylabel('Impedance [Ω]')
+            self.ax4.set_ylabel('Impedance [Ω]')
+
+            self.ax1.legend(loc='upper right')
+            self.ax2.legend(loc='upper right')
+            self.ax3.legend(loc='upper right')
+            self.ax4.legend(loc='upper right')
+
+            self.ax2.set_xscale('log')
+            self.ax4.set_xscale('log')
 
             self.ax1.grid(True)
             self.ax2.grid(True)
+            self.ax3.grid(True)
+            self.ax4.grid(True)
 
-            try:
-                self.ax1.set_xscale('log')
-                self.ax2.set_xscale('log')
-            
-            except:
-                pass
-            self.fig.tight_layout(rect=[0, 0, 0.95, 1])
+            self.fig.tight_layout()
         else:
             live_data_lines = [line for line in self.ax.lines if line.get_label() == 'Live Data']
             for line in live_data_lines:
@@ -121,12 +120,13 @@ class PlotCanvas(FigureCanvas):
             self.parameters['y_label'] = 'Current [A]'
             self.ax.autoscale_view()
         elif type == 'CV':
-            gs = GridSpec(2, 2, height_ratios=[1,20], hspace=0.02)
-            self.ax1 = self.fig.add_subplot(gs[1, 0])
-            self.ax2 = self.fig.add_subplot(gs[1, 1])
+            self.ax1 = self.fig.add_subplot(2, 2, 1)
+            self.ax2 = self.fig.add_subplot(2, 2, 2)
 
-            self.colorbar1 = self.fig.add_subplot(gs[0, 0]) # Position for colorbar
-            self.colorbar2 = self.fig.add_subplot(gs[0, 1])
+            self.ax3= self.fig.add_subplot(2, 2, 3)
+            self.ax4 = self.fig.add_subplot(2, 2, 4)    
+
+#
             self.ax.autoscale_view()
         elif type == 'Constant Voltage':
             self.ax = self.fig.add_subplot(111)
