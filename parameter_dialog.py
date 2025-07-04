@@ -112,7 +112,6 @@ class ParameterDiaglog_K2400(QDialog):
         self.device.set_auto_zero(self.auto_zero.isChecked())
     
     def load_settings(self, settings):
-        print(settings)
         if settings is None:
             return
         try:
@@ -347,7 +346,7 @@ class ParameterDialog_K2600(QDialog):
             '2V': 2,
             '20V': 20,
             '200V': 200,
-            'Auto': 'AUTO'
+            'Auto': 'Auto'
         }
         self.device.set_voltage_range(voltage_ranges[self.voltage_range.currentText()])
 
@@ -362,7 +361,7 @@ class ParameterDialog_K2600(QDialog):
             '100mA': 0.1,
             '1A': 1.0,
             '1.5A': 1.5,
-            'Auto': 'AUTO'
+            'Auto': 'Auto'
         }
         self.device.set_current_range(current_ranges[self.current_range.currentText()])
 

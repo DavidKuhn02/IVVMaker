@@ -176,7 +176,6 @@ class Functionality:
             advanced_settings.clicked.connect(lambda : self.open_parameter_dialog(device, candidate[1], candidate[2]))
             device_layout.addWidget(advanced_settings, 2, 0, 1, 3)
         if candidate[2] == 'Keithley K2600 SMU':  # Add the pop up window to allow for advanced settings for the Keithley K2600 SMUs
-            print('Keithley 2600 SMU')
             advanced_settings = QPushButton('Advanced Settings')
             advanced_settings.clicked.connect(lambda : self.open_parameter_dialog(device, candidate[1], candidate[2]))
             device_layout.addWidget(advanced_settings, 2, 0, 1, 3)
@@ -206,7 +205,6 @@ class Functionality:
         #Function for the device widget to reset the device
         try: 
             device.reset()
-            print('Resetting', device.return_id())
         except:
             pass 
     
@@ -215,7 +213,6 @@ class Functionality:
         #This is not implemented for all devices, only for the ones that are supported
         try:
             device.clear_buffer()
-            print('Clearing Buffer of', device.return_id())
         except:
             pass
 
@@ -223,7 +220,6 @@ class Functionality:
         #Function for the device widget to remove the device from the list of used devices
         #Remove the device from the list of used devices and delete the widget, this device can now be selected again
         self.ui.device_handler.used_ids.remove(id)
-        print('Removing', id)
         if widget in self.ui.device_widgets:
             self.ui.device_widgets.remove(widget)
             widget.deleteLater()
@@ -309,7 +305,7 @@ class Functionality:
         'custom_sweep_file': self.ui.custom_sweep_file.text(),
              }
             except Exception as e:
-                print('Error updating measurement settings', e)
+                raise e
                     
         elif self.ui.measurement_type == 'CV':
             try:
@@ -329,8 +325,7 @@ class Functionality:
         'custom_sweep_file': self.ui.custom_sweep_file.text(),
             }
             except Exception as e:
-                print('Error updating measurement settings', e)
-
+                raise e
         elif self.ui.measurement_type == 'Constant Voltage':
             try:
                 self.ui.constantV_settings = { # Dict to store the settings for the Constant Voltage measurement
@@ -339,7 +334,7 @@ class Functionality:
             'limitI': self.ui.limitI_spinBox.value(),
             }
             except Exception as e:
-                print('Error updating measurement settings', e)
+                raise e
 
     def start_measurement(self):
         #This function starts the measurement and creates the data saver object
@@ -361,6 +356,7 @@ class Functionality:
             self.data_saver = data_handler.DataSaver(   #start the data save thread 
                 filepath = self.ui.folder_path.text(),
                 filename = self.ui.filename.text(),
+                use_timestamp = self.ui.use_timestamp_checkBox.isChecked(),
                 ui = self.ui,
                 functionality = self)
             
@@ -376,7 +372,7 @@ class Functionality:
         
         self.ui.canvas.clear_live_data() #Clear the live data from the plot
         self.ui_changes_start() #Change the UI to show that the measurement is running
-    
+        
         if self.ui.measurement_type == 'IV':  #Start IV measurement
             self.write_parameters(self.ui.IV_settings)
             self.measurement_thread.set_parameters('IV', self.ui.IV_settings)
@@ -400,13 +396,15 @@ class Functionality:
             self.measurement_thread.start() #Start the measurement thread
 
     def receive_data(self, data):
-      
-        if len(data) > 2: #Check if the data is valid
-            self.data_saver.write_data(data)
-            self.ui.canvas.update_data(data[1], data[2]) #update the plot with the new data
-            self.ui.canvas.draw_plot() #draw the plot with the new data
-            self.ui.live_current_data.setText(f'{data[2]*1e9:.3f} nA') #Set the live data to the UI
-            self.ui.live_voltage_data.setText(f'{data[1]:.3f} V')
+        self.data_saver.write_data(data)
+        self.ui.live_current_data.setText(f'{float(data[2])*1e9:.3f} nA') #Set the live data to the UI
+        self.ui.live_voltage_data.setText(f'{float(data[1]):.3f} V')
+        
+        if self.ui.measurement_type == 'IV' or self.ui.measurement_type == 'Constant Voltage':
+            self.ui.canvas.update_data(data[1], data[2]) #update the plot with the new data    
+        elif self.ui.measurement_type == 'CV':
+            self.ui.canvas.update_cv_data(data[1], data[-1], data[-3], data[-2])
+        self.ui.canvas.draw_plot() #draw the plot with the new data
 
     def file_exists_error(self): #Handles the case when the file already exists
         self.ui.abort_button.setEnabled(False)
@@ -539,8 +537,11 @@ class Functionality:
         # This function writes the parameters of the measurement to a file so they can be used later
         filepath = self.ui.folder_path.text()
         filename = self.ui.filename.text()
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        file = os.path.join(filepath, filename+ timestamp + '_MeasurementSettings' + '.json')
+        if self.ui.use_timestamp_checkBox.isChecked():
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            file = os.path.join(filepath, filename+ '_' +  timestamp + '_MeasurementSettings' + '.json')
+        else:
+            file = os.path.join(filepath, filename + '_MeasurementSettings' + '.json')
         device_settings = {}
         for device in self.ui.device_handler.smu_devices:
             device_settings[device.return_assigned_id()] = device.settings

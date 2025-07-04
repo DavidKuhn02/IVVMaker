@@ -18,6 +18,7 @@
 # - return_num_channels(self): Returns the number of channels of the device (Currently only for Rhode&Schwarz NGE100 and HAMEG HMP4040)
 # Currently supported devices: Keithley 2000 Voltmeter, Keithley 2200 SMU, Keithley 2600 SMU, Rhode&Schwarz NGE100 Power Supply and HAMEG HMP4040 Power Supply 
 import pyvisa
+import numpy as np
 
 
 class Dummy_Device: # Dummy Device for testing purposes
@@ -341,10 +342,10 @@ class K2600: #K2600 SMU (up to 200V bias Voltage)
 
     def set_current_range(self, range):
         if range == 'Auto':
-            self.device.write('smua.source.autorangei = smua.AUTORANGE_ON')
+            self.device.write('smua.measure.autorangei = smua.AUTORANGE_ON')
         else:
-            self.device.write('smua.source.autorangei = smua.AUTORANGE_OFF')
-            self.device.write('smua.source.rangei = {}'.format(range))
+            self.device.write('smua.measure.autorangei = smua.AUTORANGE_OFF')
+            self.device.write('smua.measure.rangei = {}'.format(range))
 
     def set_voltage_range(self, range):
         if range == 'Auto':
@@ -385,12 +386,16 @@ class K6487: #K6487 Voltage source/piccoammeter
         self.assigned_id = id
         self.reset()
         self.voltage = 0 #As the device can only measure current, the voltage that is returned is the same as the set voltage.
+        self.settings = { #Standard settings for the Keithley 6487 (loaded when the device is connected)
+            }
     
     def reset(self):
         self.device.write('*RST')
         self.device.write('SOUR:FUNC VOLT')
         self.device.write('SOUR:VOLT 0')
         self.device.write('SOUR:VOLT:STAT OFF')
+        self.device.write('SOUR:VOLT:RANGE 500')
+        
     
     def clear_buffer(self):
         self.device.write('*CLS')
@@ -414,6 +419,7 @@ class K6487: #K6487 Voltage source/piccoammeter
             self.device.write('SOUR:VOLT:STAT OFF')
 
     def set_limit(self, limitI):
+        self.device.write(f'SOUR:VOLT:ILIM {limitI}')
         return
     
     def set_voltage(self, voltage):
@@ -442,6 +448,8 @@ class LowVoltagePowerSupplies: #Rhode&Schwarz NGE 100 and HAMEG HMP4040
         else:
             self.number_of_channels = 3
         self.port = port
+        self.settings = { #Standard settings for the Keithley 6487 (loaded when the device is connected)
+            }
 
     def reset(self):
         self.device.write('RST*')
@@ -482,6 +490,8 @@ class Hameg8118:
         self.assigned_id = id
         self.clear_buffer()
         self.device.write('PMOD 6') # Sets the device to measure Impedance and Phase
+        self.settings = { #Standard settings for the Keithley 6487 (loaded when the device is connected)
+            }
 
     def reset(self):
         pass #Does not work on Hameg8118 (breaks the communication)
@@ -511,14 +521,17 @@ class Hameg8118:
         pass 
     
     def measure_frequency(self):
-        return self.query_failsave('FREQ?')
+        frequency = self.query_failsave('FREQ?')
+        return frequency 
     
     def measure(self):
         values = self.query_failsave('XALL?')
-        if values == 'Error':
-            return 0, 0
-        return values.split(',')[0:1]
-        #Returns impedance and phase angle (in degrees) 
+        if values == 'ERROR':
+            return np.nan, np.nan
+        
+        impedance, phase, _ = values.split(',')
+
+        return impedance, phase # Returns phase angle in degrees and impedance in Ohm
         
     def query_failsave(self, command):
         # This function is used to query the device and handle timeouts
@@ -527,6 +540,11 @@ class Hameg8118:
         try:
             ans = self.device.query(command)
             ans = ans.strip('\n')
+            if ans == 'ERROR':
+                ans = self.decive.query(command) # If the device returns an error, try to query again
+                ans = ans.strip('\n')
+
+                
         except pyvisa.errors.VisaIOError as e:
             if 'timeout' in str(e):
                 print(f'{self.id} timeout, trying to reconnect.')

@@ -4,15 +4,18 @@ import datetime
 class DataSaver:
     #This class is responsible for saving the data to a file
     #It creates the file and writes the data to it
-    def __init__(self, filepath, filename, ui, functionality):
+    def __init__(self, filepath, filename, use_timestamp, ui, functionality):
         self.functionality = functionality
         self.ui = ui
-        self.create_file(filepath=filepath, filename=filename)
+        self.create_file(filepath=filepath, filename=filename, use_timestamp=use_timestamp)
         
-    def create_file(self, filepath, filename):  
+    def create_file(self, filepath, filename, use_timestamp = True):  
         #This function creates the file and writes the header to it
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.filepath = os.path.join(filepath, filename + '_' + timestamp + self.ui.filename_suffix.currentText())
+        if use_timestamp:
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            self.filepath = os.path.join(filepath, filename + '_' + timestamp + self.ui.filename_suffix.currentText())
+        else:
+            self.filepath = os.path.join(filepath, filename + self.ui.filename_suffix.currentText())
         try:
             self.file = open(self.filepath, 'x', buffering=1)
             self.write_header()
@@ -30,7 +33,7 @@ class DataSaver:
             self.header.append(f'Voltage_SMU_{i}[V]')
             self.header.append(f'Current_SMU_{i}[A]')
         for i in range(len(self.ui.device_handler.voltmeter_devices)):
-            self.header.append(f'{self.ui.device_handler.voltmeter_devices[i].type}_Voltmeter_{i}')
+            self.header.append(f'{self.ui.device_handler.voltmeter_devices[i].type}_{i}')
         for i in range(len(self.ui.device_handler.lowV_devices)):
             num_channels = self.ui.device_handler.lowV_devices[i].return_num_channels()
             if num_channels == 3:
@@ -38,9 +41,9 @@ class DataSaver:
             else:
                 self.header.append(f'Voltage_lowV_{i}_Channel_1[V] Voltage_lowV_{i}_Channel_2[V] Voltage_lowV_{i}_Channel_3[V] Voltage_lowV_{i}_Channel_4[V] Current_lowV_{i}_Channel_1[A] Current_lowV_{i}_Channel_2[A] Current_lowV_{i}_Channel_3[A] Current_lowV_{i}_Channel_4[A]')
         for i in range(len(self.ui.device_handler.capacitancemeter_devices)):
-            self.header.append(f'Impedance_capacitancemeter_device{i}')
-            self.header.append(f'Phase_capacitancemeter_device{i}')
-            self.header.append(f'Frequency_capacitancemeter_device{i}')
+            self.header.append(f'Impedance_LCR_{i}[Ohm]')
+            self.header.append(f'Phase_LCR_{i}[Deg]')
+            self.header.append(f'Frequency_LCR_{i}[Hz]')
         self.file.write(' '.join(self.header)+ '\n') 
         
 
