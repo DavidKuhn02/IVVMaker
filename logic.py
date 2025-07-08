@@ -371,7 +371,6 @@ class Functionality:
             pass  # No existing connection, safe to proceed
         
         self.ui.canvas.clear_live_data() #Clear the live data from the plot
-        self.ui.canvas.change_plot_type(self.ui.measurement_type) #Change the plot type to the new measurement type, this also resets the plot
         self.ui_changes_start() #Change the UI to show that the measurement is running
         
         if self.ui.measurement_type == 'IV':  #Start IV measurement
@@ -404,7 +403,7 @@ class Functionality:
         if self.ui.measurement_type == 'IV' or self.ui.measurement_type == 'Constant Voltage':
             self.ui.canvas.update_data(data[1], data[2]) #update the plot with the new data    
         elif self.ui.measurement_type == 'CV':
-            self.ui.canvas.update_data(data[-1], data[-3], data[-2]) 
+            self.ui.canvas.update_cv_data(data[1], data[-1], data[-3], data[-2])
         self.ui.canvas.draw_plot() #draw the plot with the new data
 
     def file_exists_error(self): #Handles the case when the file already exists
