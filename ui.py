@@ -18,7 +18,6 @@ class Ui_MainWindow(QWidget):
     def __init__(self, rm):
         super().__init__()
         self.rm = rm
-        self.device_handler = Device_Handler(self.rm) # Initialize the device handler
         self.IV_settings = { # Dict to store the settings for the IV measurement
         'startV': 0,
         'stopV': 0,

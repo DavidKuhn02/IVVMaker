@@ -7,11 +7,13 @@ import parameter_dialog
 import devices
 import data_handler
 import config_manager
+from device_handling import Device_Handler 
 import numpy as np
 import json
 import os
 from datetime import datetime 
 import qdarkstyle
+
 
 
 class Functionality:
@@ -20,6 +22,7 @@ class Functionality:
         self.darkmode = False
         self.config_manager = config_manager.config_manager(self.ui)
         self.open_parameter_dialogs = [] #List of open parameter dialogs, to be closed when the measurement is started
+        self.device_handler = Device_Handler(self.ui.rm)  # Create the device handler object
 
     def openEvent(self):
         #This is called at the start of the program and sets up the UI
@@ -29,11 +32,11 @@ class Functionality:
     def closeEvent(self):
         #This function is called when the program is closed and saves the current settings to a config file
         #It also closes all devices 
-        for device in self.ui.device_handler.smu_devices:
+        for device in self.device_handler.smu_devices:
             device.close()
-        for device in self.ui.device_handler.voltmeter_devices:
+        for device in self.device_handler.voltmeter_devices:
             device.close()  
-        for device in self.ui.device_handler.lowV_devices:
+        for device in self.device_handler.lowV_devices:
             device.close()
         self.update_measurement_settings()
         config = self.config_manager.assemble_config()
@@ -58,10 +61,10 @@ class Functionality:
 
     def refresh_devices(self):
         #This function refreshes the list of available devices and adds them to the device handler
-        self.ui.device_handler.find_devices()
+        self.device_handler.find_devices()
         self.ui.select_decive.clear()
         self.ui.select_decive.addItem('Select Device')
-        for device in self.ui.device_handler.device_candidates:
+        for device in self.device_handler.device_candidates:
             self.ui.select_decive.addItem(device[2] + ', ID: '+ device[1])
 
     def add_device_entry(self): 
@@ -73,34 +76,34 @@ class Functionality:
         else:
             self.ui.select_decive.removeItem(index)  #Remove the selected device from the list of available devices
             self.ui.select_decive.setCurrentIndex(0) #Set the current index to 0 to be able to select another device
-            candidate = self.ui.device_handler.device_candidates[index-1] #Select the right device from the list of candidates (index shifts by 1 because of the default entry)
-            self.ui.device_handler.device_candidates.remove(candidate) #Remove the selected device from the list of candidates
-            self.ui.device_handler.used_ids.append(candidate[1]) #Add the selected device to the list of used ids to not be able to select it again
+            candidate = self.device_handler.device_candidates[index-1] #Select the right device from the list of candidates (index shifts by 1 because of the default entry)
+            self.device_handler.device_candidates.remove(candidate) #Remove the selected device from the list of candidates
+            self.device_handler.used_ids.append(candidate[1]) #Add the selected device to the list of used ids to not be able to select it again
             if 'Keithley K2200 SMU' in candidate[2]: # Check the type of the device and create the respective object 
                 device = devices.K2200(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.smu_devices.append(device)
+                self.device_handler.smu_devices.append(device)
                 self.K2200_warning()
             elif 'Keithley K2400 SMU' in candidate[2]:
                 device = devices.K2400(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.smu_devices.append(device)
+                self.device_handler.smu_devices.append(device)
             elif 'Keithley K2600 SMU' in candidate[2]:
                 device = devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.smu_devices.append(device)
+                self.device_handler.smu_devices.append(device)
             elif 'Keithley K6487 SMU' in candidate[2]:
                 device = devices.K6487(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.smu_devices.append(device)
+                self.device_handler.smu_devices.append(device)
             elif 'Keithley K2000 Voltmeter' in candidate[2]:
                 device = devices.K2000(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.voltmeter_devices.append(device)
+                self.device_handler.voltmeter_devices.append(device)
             elif 'Rhode&Schwarz NGE103B' in candidate[2]:
                 device = devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.lowV_devices.append(device)
+                self.device_handler.lowV_devices.append(device)
             elif 'HAMEG HMP4040' in candidate[2]:
                 device = devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.lowV_devices.append(device)
+                self.device_handler.lowV_devices.append(device)
             elif 'HAMEG HM8118' in candidate[2]:
                 device = devices.Hameg8118(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.capacitancemeter_devices.append(device)
+                self.device_handler.capacitancemeter_devices.append(device)
             elif 'Dummy' in candidate[2]: #For testing purposes 
                 device = devices.Dummy_Device(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
             else:
@@ -112,33 +115,33 @@ class Functionality:
 
     def add_all_devices(self):
         #This functions combines the refresh and add device functions to add all connected devices at once. DO NOT USE if you have a lot of devices connected, you will loose the overview of the devices 
-        self.ui.device_handler.find_devices()
+        self.device_handler.find_devices()
         self.ui.select_decive.clear()
         self.ui.select_decive.addItem('Select Device')
-        for candidate in self.ui.device_handler.device_candidates:
-            self.ui.device_handler.used_ids.append(candidate[1])
+        for candidate in self.device_handler.device_candidates:
+            self.device_handler.used_ids.append(candidate[1])
             if 'Keithley K2200 SMU' in candidate[2]: # Check the type of the device and create the respective object 
                 device = devices.K2200(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.smu_devices.append(device)
+                self.device_handler.smu_devices.append(device)
                 self.K2200_warning()
             elif 'Keithley K2400 SMU' in candidate[2]:
                 device = devices.K2400(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.smu_devices.append(device)
+                self.device_handler.smu_devices.append(device)
             elif 'Keithley K2600 SMU' in candidate[2]:
                 device = devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.smu_devices.append(device)
+                self.device_handler.smu_devices.append(device)
             elif 'Keithley K6487 SMU' in candidate[2]:
                 device = devices.K6487(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.smu_devices.append(device)
+                self.device_handler.smu_devices.append(device)
             elif 'Keithley K2000 Voltmeter' in candidate[2]:
                 device = devices.K2000(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.voltmeter_devices.append(device)
+                self.device_handler.voltmeter_devices.append(device)
             elif 'Rhode&Schwarz NGE103B' in candidate[2]:
                 device = devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.lowV_devices.append(device)
+                self.device_handler.lowV_devices.append(device)
             elif 'HAMEG HMP4040' in candidate[2]:
                 device = devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.ui.device_handler.lowV_devices.append(device)
+                self.device_handler.lowV_devices.append(device)
             elif 'Dummy' in candidate[2]: #For testing purposes 
                 device = devices.Dummy_Device(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
             else:
@@ -199,8 +202,6 @@ class Functionality:
             dialog.show()
             self.open_parameter_dialogs.append(dialog)
         
-        
-
     def reset_device(self, device): 
         #Function for the device widget to reset the device
         try: 
@@ -219,18 +220,18 @@ class Functionality:
     def remove_device(self, device, id, widget):
         #Function for the device widget to remove the device from the list of used devices
         #Remove the device from the list of used devices and delete the widget, this device can now be selected again
-        self.ui.device_handler.used_ids.remove(id)
+        self.device_handler.used_ids.remove(id)
         if widget in self.ui.device_widgets:
             self.ui.device_widgets.remove(widget)
             widget.deleteLater()
-        if device in self.ui.device_handler.smu_devices:
-            self.ui.device_handler.smu_devices.remove(device)
-        if device in self.ui.device_handler.voltmeter_devices:
-            self.ui.device_handler.voltmeter_devices.remove(device)
-        if device in self.ui.device_handler.lowV_devices:
-            self.ui.device_handler.lowV_devices.remove(device)
-        if device in self.ui.device_handler.capacitancemeter_devices:
-            self.ui.device_handler.capacitancemeter_devices.remove(device)
+        if device in self.device_handler.smu_devices:
+            self.device_handler.smu_devices.remove(device)
+        if device in self.device_handler.voltmeter_devices:
+            self.device_handler.voltmeter_devices.remove(device)
+        if device in self.device_handler.lowV_devices:
+            self.device_handler.lowV_devices.remove(device)
+        if device in self.device_handler.capacitancemeter_devices:
+            self.device_handler.capacitancemeter_devices.remove(device)
 
         device.close()
         return
@@ -364,7 +365,7 @@ class Functionality:
             self.file_exists_error()
             return        
         
-        self.measurement_thread = measurement_thread.MeasurementThread(ui = self.ui, device_handler= self.ui.device_handler) #Create the measurement thread 
+        self.measurement_thread = measurement_thread.MeasurementThread(ui = self.ui, device_handler= self.device_handler) #Create the measurement thread 
         try:
             self.measurement_thread.finished_signal.disconnect(self.finish_measurement)
         except TypeError:
@@ -412,11 +413,11 @@ class Functionality:
 
     def safety_check(self, parameters=None, type = 'IV'): #This function performs various checks before starting the measurement
         #Check if all connected devices are communicating correctly
-        if len(self.ui.device_handler.smu_devices) == 0:
+        if len(self.device_handler.smu_devices) == 0:
             self.abort_measurement('No SMU connected. Not able to perform a measurement')
             return False
 
-        if type == 'CV' and len(self.ui.device_handler.capacitancemeter_devices) == 0:
+        if type == 'CV' and len(self.device_handler.capacitancemeter_devices) == 0:
             self.abort_measurement('No capacitance meter connected. Not able to perform a CV measurement')
             return False
 
@@ -479,19 +480,19 @@ class Functionality:
         return True #If all checks are passed, return True
 
     def test_communication(self): #This function tests the communication with the connected devices by sending a *IDN? command and checking if the response is valid. If any of the devices fail, it will disconnect them and give a warning
-        for device in self.ui.device_handler.smu_devices:
+        for device in self.device_handler.smu_devices:
             try:
                 device.return_id()
             except:
                 self.abort_measurement(f'Communication with {device.return_assigned_id()} failed. Please reconnect this device and try again.')
                 return
-        for device in self.ui.device_handler.voltmeter_devices:
+        for device in self.device_handler.voltmeter_devices:
             try:
                 device.return_id()
             except:
                 self.abort_measurement(f'Communication with {device.return_assigned_id()} failed. Please reconnect this device and try again.')
                 return
-        for device in self.ui.device_handler.lowV_devices:
+        for device in self.device_handler.lowV_devices:
             try:
                 device.return_id()
             except:
@@ -543,9 +544,9 @@ class Functionality:
         else:
             file = os.path.join(filepath, filename + '_MeasurementSettings' + '.json')
         device_settings = {}
-        for device in self.ui.device_handler.smu_devices:
+        for device in self.device_handler.smu_devices:
             device_settings[device.return_assigned_id()] = device.settings
-        for device in self.ui.device_handler.voltmeter_devices:
+        for device in self.device_handler.voltmeter_devices:
             device_settings[device.return_assigned_id()] = device.settings
 
         settings = {
@@ -557,68 +558,3 @@ class Functionality:
         with open(file, 'w') as f:
             json.dump(settings, f, indent = 4)
 
-class Device_Handler:   #Class that handles the devices and their IDs
-    def __init__(self, rm):
-        self.rm = rm
-        self.ports = self.rm.list_resources() # Get all available ports for possible devices
-        self.device_candidates = [] # List of device candidates, contains [port, id, type] 
-        self.smu_devices = [] # List of used SMUs
-        self.voltmeter_devices = [] # List of used voltmeters
-        self.lowV_devices = [] # List of used low voltage power supplies
-        self.capacitancemeter_devices = [] # List of used capacitance meters
-        self.used_ids = [] # List of the ids of used devices
-
-    def find_devices(self):
-        self.ports = self.rm.list_resources() # search devices and clear all canidates for that, to prevent double entries
-        self.clear()
-#        self.device_candidates.append(['Dummy Port', 'Dummy Device', 'Dummy']) # Add a dummy device for testing purposes
-        for port in self.ports:
-            try:
-                device = self.rm.open_resource(port) # Try to open the port 
-            except:
-                continue                    
-            #As some devices use different termination characters, we need to try different ones, if "\n" does not work we try "\r"
-            device.write_termination = '\n'
-            device.read_termination = '\n'
-            device.baude_rate = 9600 # Set the baud rate to 9600 (default for most devices)
-            device.timeout = 500
-            try:
-                id = device.query('*IDN?').strip('').strip('') # Query the identification string of the device
-                print(port, id)
-            except:
-                device.write_termination = '\r' # Change the termination characters to "\r"
-                device.read_termination = '\r'
-                try:
-                    id = device.query('*IDN?').strip('').strip('') #Try again if the device is not responding with "\n" terminations  
-                except:
-                    #print('Could not get ID from', port) #Debug message
-                    continue
-            # Now we need to sort the devices into their respective categories.
-            # If you want to add a new device, you need to add it here 
-            if id in self.used_ids: # Check if the device is already in use
-                print(id, ' already in use')
-                continue
-            if 'Keithley' in id and '2200' in id:
-                self.device_candidates.append([port, id, 'Keithley K2200 SMU'])
-            elif 'KEITHLEY' in id and ('2470' in id or '2450' in id):
-                self.device_candidates.append([port, id, 'Keithley K2400 SMU'])
-            elif 'Keithley' in id and '2611' in id:
-                self.device_candidates.append([port, id, 'Keithley K2600 SMU'])
-            elif 'KEITHLEY' in id and 'MODEL 6487' in id:
-                self.device_candidates.append([port, id, 'Keithley K6487 SMU'])
-            elif 'KEITHLEY' in id and '2000'in id:
-                self.device_candidates.append([port, id, 'Keithley K2000 Voltmeter'])
-            elif 'NGE103B' in id:
-                self.device_candidates.append([port, id, 'Rhode&Schwarz NGE103B'])
-            elif 'HMP4040' in id: 
-                self.device_candidates.append([port, id, 'HAMEG HMP4040'])
-            elif 'HM8118' in id:
-                self.device_candidates.append([port, id, 'HAMEG HM8118'])
-            else:
-                self.device_candidates.append([port, id, 'Uncharacterized'])
-            device.close()
-        print('Found devices:', self.device_candidates)
-        return np.array(self.device_candidates)
-
-    def clear(self):
-        self.device_candidates = []
