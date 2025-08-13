@@ -1,0 +1,17 @@
+{
+  "name": "LowVoltagePowerSupplies",
+  "type": "powersupply",
+  "init_commands": ["*RST"],
+  "settings": {},
+  "commands": {
+    "reset": "RST*",
+    "clear_buffer": "*CLS",
+    "return_id": "*IDN?",
+    "return_channel_id": "INST:NSEL?",
+    "set_channel": "INST:NSEL {channel}",
+    "read_current": "MEAS:CURR?",
+    "read_voltage": "MEAS:VOLT?",
+    "close": "CLOSE"
+  },
+  "num_channels": 3
+}

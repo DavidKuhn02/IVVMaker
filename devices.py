@@ -17,8 +17,106 @@
 # - enable_highC(self, highC): Enables or disables the high current mode of the device (Currently only for K2600)
 # - return_num_channels(self): Returns the number of channels of the device (Currently only for Rhode&Schwarz NGE100 and HAMEG HMP4040)
 # Currently supported devices: Keithley 2000 Voltmeter, Keithley 2200 SMU, Keithley 2600 SMU, Rhode&Schwarz NGE100 Power Supply and HAMEG HMP4040 Power Supply 
+
 import pyvisa
 import numpy as np
+import json
+import os
+
+# Path to the devices folder containing JSON files
+DEVICES_FOLDER = os.path.join(os.path.dirname(__file__), 'devices')
+
+class GenericDevice:
+    """
+    Generic device class that loads its configuration from a JSON file.
+    """
+    def __init__(self, port, id, rm, config_path):
+        self.port = port
+        self.assigned_id = id
+        self.rm = rm
+        self.device = rm.open_resource(port)
+        with open(config_path, 'r') as f:
+            self.config = json.load(f)
+        self.settings = self.config.get('settings', {})
+        self.init_device()
+
+    def init_device(self):
+        # Run any initialization commands from the config
+        for cmd in self.config.get('init_commands', []):
+            self.device.write(cmd)
+
+    def reset(self):
+        cmd = self.config['commands'].get('reset')
+        if cmd:
+            self.device.write(cmd)
+
+    def clear_buffer(self):
+        cmds = self.config['commands'].get('clear_buffer')
+        if cmds:
+            if isinstance(cmds, list):
+                for cmd in cmds:
+                    self.device.write(cmd)
+            else:
+                self.device.write(cmds)
+
+    def return_port(self):
+        return self.port
+
+    def return_id(self):
+        id_cmd = self.config['commands'].get('return_id', '*IDN?')
+        return self.device.query(id_cmd)
+
+    def return_assigned_id(self):
+        return self.assigned_id
+
+    def close(self):
+        self.device.close()
+
+    def set_voltage(self, voltage):
+        cmd = self.config['commands'].get('set_voltage')
+        if cmd:
+            self.device.write(cmd.format(value=voltage))
+
+    def set_limit(self, limitI):
+        cmd = self.config['commands'].get('set_limit')
+        if cmd:
+            self.device.write(cmd.format(value=limitI))
+
+    def measure_voltage(self):
+        cmd = self.config['commands'].get('measure_voltage')
+        if cmd:
+            return float(self.device.query(cmd))
+        return None
+
+    def measure_current(self):
+        cmd = self.config['commands'].get('measure_current')
+        if cmd:
+            return float(self.device.query(cmd))
+        return None
+
+    def measure_resistance(self):
+        cmd = self.config['commands'].get('measure_resistance')
+        if cmd:
+            return float(self.device.query(cmd))
+        return None
+
+    # Add more generic methods as needed, mapping to config['commands']
+
+def load_device_configs():
+    """
+    Loads all device JSON configs from the devices/ folder.
+    Returns a dict mapping device name to config path.
+    """
+    configs = {}
+    if os.path.isdir(DEVICES_FOLDER):
+        for fname in os.listdir(DEVICES_FOLDER):
+            if fname.endswith('.json'):
+                path = os.path.join(DEVICES_FOLDER, fname)
+                with open(path, 'r') as f:
+                    data = json.load(f)
+                    name = data.get('name', fname[:-5])
+                    configs[name] = path
+    return configs
 
 
 class Dummy_Device: # Dummy Device for testing purposes

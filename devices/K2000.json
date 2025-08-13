@@ -1,0 +1,41 @@
+{
+  "name": "K2000",
+  "type": "multimeter",
+  "init_commands": [],
+  "settings": {
+    "measurement_type": "VOLD:DC",
+    "voltage_range": "Auto",
+    "current_range": "Auto",
+    "resistance_range": "Auto",
+    "use_filter": false,
+    "filter_num": 10,
+    "filter_type": "Moving Average"
+  },
+  "commands": {
+    "reset": "*RST",
+    "clear_buffer": "*CLS",
+    "return_id": "*IDN?",
+    "set_measurement_type": "SENS:FUNC \"{value}\"",
+    "update_voltage_range_auto": "SENS:VOLT:DC:RANG:AUTO ON",
+    "update_voltage_range": "SENS:VOLT:DC:RANG {value}",
+    "update_current_range_auto": "SENS:CURR:DC:RANG:AUTO ON",
+    "update_current_range": "SENS:CURR:DC:RANG {value}",
+    "update_resistance_range_auto": "SENS:RES:RANG:AUTO ON",
+    "update_resistance_range": "SENS:RES:RANG {value}",
+    "update_filter_on": "SENS:{type}:AVER:STAT ON",
+    "update_filter_off": "SENS:{type}:AVER:STAT OFF",
+    "update_filter_count": "SENS:{type}:AVER:COUNT {value}",
+    "update_filter_type_moving": "SENS:{type}:AVER:TCON MOV",
+    "update_filter_type_repeat": "SENS:{type}:AVER:TCON REP",
+    "measure": "READ?"
+  },
+  "ui_settings": [
+    {"name": "measurement_type", "type": "select", "label": "Measurement Type", "options": ["VOLT:DC", "VOLT:AC", "CURR:DC", "CURR:AC", "RES"], "default": "VOLT:DC"},
+    {"name": "voltage_range", "type": "select", "label": "Voltage Range", "options": ["Auto", "100mV", "1V", "10V", "100V", "1000V"], "default": "Auto"},
+    {"name": "current_range", "type": "select", "label": "Current Range", "options": ["Auto", "1mA", "10mA", "100mA", "1A"], "default": "Auto"},
+    {"name": "resistance_range", "type": "select", "label": "Resistance Range", "options": ["Auto", "100Ω", "1kΩ", "10kΩ", "100kΩ", "1MΩ", "10MΩ"], "default": "Auto"},
+    {"name": "use_filter", "type": "checkbox", "label": "Use Filter", "default": false},
+    {"name": "filter_num", "type": "int", "label": "Filter Count", "min": 1, "max": 100, "step": 1, "default": 10},
+    {"name": "filter_type", "type": "select", "label": "Filter Type", "options": ["Moving Average", "Repeat Average"], "default": "Moving Average"}
+  ]
+}

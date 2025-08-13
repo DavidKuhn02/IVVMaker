@@ -1,0 +1,46 @@
+{
+  "name": "K2400",
+  "type": "smu",
+  "init_commands": [":SOUR:FUNC VOLT", ":SOUR:VOLT 0"],
+  "settings": {
+    "voltage_range": "Auto",
+    "current_range": "Auto",
+    "nplc": 1,
+    "high_capacitance": false,
+    "use_filter": false,
+    "filter_num": 10,
+    "filter_type": "Moving Average",
+    "auto_zero": true
+  },
+  "commands": {
+    "reset": "*RST",
+    "clear_buffer": ["*CLS", "TRAC:CLE \"defbuffer1\"", "TRAC:CLE \"defbuffer2\""],
+    "return_id": "*IDN?",
+    "enable_highC": ":SOUR:VOLT:HIGH:CAP ON",
+    "disable_highC": ":SOUR:VOLT:HIGH:CAP OFF",
+    "set_voltage_range": ":SOUR:VOLT:RANG {value}",
+    "set_voltage_range_auto_on": ":SOUR:VOLT:RANG:AUTO ON",
+    "set_voltage_range_auto_OFF": ":SOUR:VOLT:RANG:AUTO OFF",
+    "set_current_range": ":SENS:CURR:RANG {value}",
+    "set_current_range_auto": ":SENS:CURR:RANG:AUTO ON",
+    "set_filter": ":SENS:CURR:AVER:COUN {filter_num}; :SENS:CURR:AVER:TCON {filter_type}; :SENS:CURR:AVER {filter}",
+    "set_nplc": ":SENS:CURR:NPLC {value}",
+    "set_auto_zero": ":SENS:CURR:AZER {state}",
+    "enable_output": ":OUTP {state}",
+    "set_limit": ":SOUR:VOLT:ILIM {value}",
+    "set_voltage": ":SOUR:VOLT {value}",
+    "measure_current": ":MEAS:CURR?",
+    "measure_voltage": ":MEAS:VOLT?",
+    "measure_resistance": ":MEAS:RES?"
+  },
+  "ui_settings" :[
+    {"name" : "voltage_range", "label" : "Voltage Range", "type" : "select", "options" : ["Auto", "200mV", "2V", "20V", "200V", "1000V"], "default" : "Auto", "function": "set_voltage_range"},
+    {"name" : "current_range", "label" : "Current Range", "type" : "select", "options" : ["Auto", "10nA", "100nA", "1uA", "10uA", "100uA", "1mA", "10mA", "100mA", "1A"], "default" : "Auto", "function": "set_current_range"},
+    {"name" : "nplc", "label" : "NPLC", "type" : "int", "default" : 1, "min": 0, "max": 10, "step": 1, "function": "set_nplc"},
+    {"name" : "high_capacitance", "label" : "High Capacitance", "type" : "checkbox", "default" : false, "function": "enable_highC"},
+    {"name" : "use_filter", "label" : "Use Filter", "type" : "checkbox", "default" : false, "function": "set_filter"},
+    {"name" : "filter_num", "label" : "Filter Number", "type" : "int", "default" : 10, "min": 1, "max": 100, "step": 1, "function": "set_filter"},
+    {"name" : "filter_type", "label" : "Filter Type", "type" : "select", "options": ["Moving Average", "Repeat"], "default": "Moving Average", "function": "set_filter"},
+    {"name": "auto_zero", "label": "Auto Zero", "type": "checkbox", "default": true, "function": "set_auto_zero"}
+  ]
+}

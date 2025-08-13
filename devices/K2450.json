@@ -1,0 +1,36 @@
+{
+  "name": "K2450",
+  "type": "smu",
+  "init_commands": [":SOUR:FUNC VOLT", ":SOUR:VOLT 0"],
+  "settings": {
+    "voltage_range": "Auto",
+    "current_range": "Auto",
+    "nplc": 1,
+    "high_capacitance": false,
+    "use_filter": false,
+    "filter_num": 10,
+    "filter_type": "Moving Average",
+    "auto_zero": true
+  },
+  "commands": {
+    "reset": "*RST",
+    "clear_buffer": ["*CLS", "TRAC:CLE \"defbuffer1\"", "TRAC:CLE \"defbuffer2\""],
+    "return_id": "*IDN?",
+    "enable_highC": ":SOUR:VOLT:HIGH:CAP ON",
+    "disable_highC": ":SOUR:VOLT:HIGH:CAP OFF",
+    "set_voltage_range": ":SOUR:VOLT:RANG {value}",
+    "set_voltage_range_auto": ":SOUR:VOLT:RANG:AUTO ON",
+    "set_current_range": ":SENS:CURR:RANG {value}",
+    "set_current_range_auto": ":SENS:CURR:RANG:AUTO ON",
+    "set_filter": ":SENS:CURR:AVER:COUN {filter_num}; :SENS:CURR:AVER:TCON {filter_type}; :SENS:CURR:AVER {filter}",
+    "set_nplc": ":SENS:CURR:NPLC {value}",
+    "set_auto_zero": ":SENS:CURR:AZER {state}",
+    "enable_output": ":OUTP {state}",
+    "set_limit": ":SOUR:VOLT:ILIM {value}",
+    "set_voltage": ":SOUR:VOLT {value}",
+    "measure_current": ":MEAS:CURR?",
+    "measure_voltage": ":MEAS:VOLT?",
+    "measure_resistance": ":MEAS:RES?"
+  }
+}
+

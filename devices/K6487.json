@@ -1,0 +1,17 @@
+{
+  "name": "K6487",
+  "type": "SMU",
+  "init_commands": ["*RST", "SOUR:FUNC VOLT", "SOUR:VOLT 0", "SOUR:VOLT:STAT OFF", "SOUR:VOLT:RANGE 500"],
+  "settings": {},
+  "commands": {
+    "reset": ["*RST", "SOUR:FUNC VOLT", "SOUR:VOLT 0", "SOUR:VOLT:STAT OFF", "SOUR:VOLT:RANGE 500"],
+    "clear_buffer": "*CLS",
+    "return_id": "*IDN?",
+    "enable_output": "SOUR:VOLT:STAT {state}",
+    "set_limit": "SOUR:VOLT:ILIM {value}",
+    "set_voltage": "SOUR:VOLT {value}",
+    "measure_current": "READ?",
+    "measure_voltage": "{voltage}",
+    "close": "CLOSE"
+  }
+}

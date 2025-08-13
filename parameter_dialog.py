@@ -4,6 +4,45 @@ from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QCheckBox, QSpinBox, QDouble
 from PyQt5.QtWidgets import QFormLayout, QGroupBox, QScrollArea, QScrollBar
 
 
+class ParameterDialog(QDialog):
+    def __init__(self, ui_settings, id):
+        super().__init__()
+        self.setWindowTitle(f'Settings for {id}')
+        self.setGeometry(320, 180, 400, 300)    
+        layout = QVBoxLayout()
+        self.widgets = {}
+        for field in ui_settings:
+            label = QLabel(field['label'])
+            layout.addWidget(label)
+            if field['type'] == 'select':
+                widget = QComboBox()
+                widget.addItems(field['options'])
+                widget.setCurrentText(field.get('default'))
+                widget.currentTextChanged.connect(lambda : field['function'](widget.currentText()))
+            elif field['type'] == 'checkbox':
+                widget = QCheckBox()
+                widget.setChecked(field.get('default'))
+            elif field['type'] == 'int':
+                widget = QSpinBox()
+                widget.setMinimum(field.get('min', 0))
+                widget.setMaximum(field.get('max', 100))
+                widget.setSingleStep(field.get('step', 1))
+                widget.setValue(field.get('default', 0))
+            elif field['type'] == 'float':
+                widget = QDoubleSpinBox()
+                widget.setMinimum(field.get('min', 0))
+                widget.setMaximum(field.get('max', 100))
+                widget.setSingleStep(field.get('step', 1))
+                widget.setValue(field.get('default', 0))
+            else:
+                continue
+            layout.addWidget(widget)
+            self.widgets[field['name']] = widget
+            
+        self.setLayout(layout)
+
+
+
 
 class ParameterDiaglog_K2400(QDialog):
     def __init__(self, device, id, rm, logic):
@@ -398,4 +437,3 @@ class ParameterDialog_K2600(QDialog):
 
 
 
-        

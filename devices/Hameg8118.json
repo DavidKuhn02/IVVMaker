@@ -1,0 +1,17 @@
+{
+  "name": "Hameg8118",
+  "type": "LCR",
+  "init_commands": ["*CLS", "PMOD 6"],
+  "settings": {},
+  "commands": {
+    "reset": "#NOT_IMPLEMENTED",
+    "clear_buffer": "*CLS",
+    "return_id": "*IDN?",
+    "set_frequency": "FREQ {value}",
+    "set_voltage": "#NOT_IMPLEMENTED",
+    "measure_frequency": "FREQ?",
+    "measure": "XALL?",
+    "query_failsave": "{command}",
+    "close": "CLOSE"
+  }
+}

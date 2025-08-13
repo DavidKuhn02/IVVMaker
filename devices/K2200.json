@@ -1,0 +1,23 @@
+{
+  "name": "K2200",
+  "type": "smu",
+  "init_commands": [],
+  "settings": {},
+  "commands": {
+    "reset": "*RST",
+    "clear_buffer": "*CLS",
+    "return_id": "*IDN?",
+    "enable_output": "OUTPUT {state}",
+    "set_limit": "CURR {value:.4f}",
+    "set_voltage": "VOLT {value:.4f}",
+    "measure_current": "MEAS:CURR?",
+    "measure_voltage": "MEAS:VOLT?"
+  },
+  "ui_settings": [
+    {"name": "voltage_range", "type": "select", "label": "Source Voltage Range", "options": ["Auto", "1V", "10V", "20V", "30V"], "default": "Auto"},
+    {"name": "current_range", "type": "select", "label": "Current Limit Range", "options": ["Auto", "10mA", "100mA", "1A"], "default": "Auto"},
+    {"name": "use_filter", "type": "checkbox", "label": "Use Filter", "default": false},
+    {"name": "filter_num", "type": "int", "label": "Filter Count", "min": 1, "max": 100, "step": 1, "default": 1},
+    {"name": "filter_type", "type": "select", "label": "Filter Type", "options": ["Moving Average", "Repeat Average"], "default": "Moving Average"}
+  ]
+}

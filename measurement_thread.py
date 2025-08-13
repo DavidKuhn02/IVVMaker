@@ -157,7 +157,7 @@ class MeasurementThread(QThread):
 
         for capacitance_unit in self.device_handler.capacitancemeter_devices: 
             frequency = capacitance_unit.measure_frequency() # Measure the frequency that is set at the capacitance meter
-            impedance, phase = capacitance_unit.measure() #Returns the impedance and phase of the capacitance meter
+            impedance, phase = capacitance_unit.measure_impedance_phase() #Returns the impedance and phase of the capacitance meter
 
             data.append(float(impedance))
             data.append(float(phase))

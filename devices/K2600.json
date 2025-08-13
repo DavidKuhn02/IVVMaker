@@ -1,0 +1,33 @@
+{
+  "name": "K2600",
+  "type": "smu",
+  "init_commands": [],
+  "settings": {
+    "voltage_range": "Auto",
+    "current_range": "Auto",
+    "nplc": 1,
+    "high_capacitance": false,
+    "use_filter": false,
+    "filter_num": 10,
+    "filter_type": "Moving Average",
+    "auto_zero": true
+  },
+  "commands": {
+    "reset": ["smua.source.levelv=0", "smua.source.output = smua.OUTPUT_OFF"],
+    "clear_buffer": "*CLS",
+    "return_id": "*IDN?",
+    "enable_output": "smua.source.output = smua.OUTPUT_ON",
+    "disable_output": "smua.source.output = smua.OUTPUT_OFF",
+    "set_limit": "smua.source.limiti= {value}",
+    "enable_highC_on": "smua.source.highc = smua.ENABLE",
+    "enable_highC_off": "smua.source.highc = smua.DISABLE",
+    "set_current_range_auto": "smua.measure.autorangei = smua.AUTORANGE_ON",
+    "set_voltage_range": "smua.source.rangev = {value}",
+    "set_voltage_range_auto": "smua.source.autorangev = smua.AUTORANGE_ON",
+    "set_filter": "smua.measure.filter.count = {filter_num}; smua.measure.filter.type = {filter_type}; smua.measure.filter.enable = {filter}",
+    "set_voltage": "smua.source.levelv={value}",
+    "measure_current": "print(smua.measure.i())",
+    "measure_voltage": "print(smua.measure.v())",
+    "close": "CLOSE"
+  }
+}

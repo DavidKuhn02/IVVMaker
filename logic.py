@@ -7,7 +7,7 @@ import parameter_dialog
 import devices
 import data_handler
 import config_manager
-from device_handling import Device_Handler 
+from device_handling import Device_Handler, Device
 import numpy as np
 import json
 import os
@@ -79,78 +79,16 @@ class Functionality:
             candidate = self.device_handler.device_candidates[index-1] #Select the right device from the list of candidates (index shifts by 1 because of the default entry)
             self.device_handler.device_candidates.remove(candidate) #Remove the selected device from the list of candidates
             self.device_handler.used_ids.append(candidate[1]) #Add the selected device to the list of used ids to not be able to select it again
-            if 'Keithley K2200 SMU' in candidate[2]: # Check the type of the device and create the respective object 
-                device = devices.K2200(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.smu_devices.append(device)
-                self.K2200_warning()
-            elif 'Keithley K2400 SMU' in candidate[2]:
-                device = devices.K2400(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.smu_devices.append(device)
-            elif 'Keithley K2600 SMU' in candidate[2]:
-                device = devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.smu_devices.append(device)
-            elif 'Keithley K6487 SMU' in candidate[2]:
-                device = devices.K6487(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.smu_devices.append(device)
-            elif 'Keithley K2000 Voltmeter' in candidate[2]:
-                device = devices.K2000(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.voltmeter_devices.append(device)
-            elif 'Rhode&Schwarz NGE103B' in candidate[2]:
-                device = devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.lowV_devices.append(device)
-            elif 'HAMEG HMP4040' in candidate[2]:
-                device = devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.lowV_devices.append(device)
-            elif 'HAMEG HM8118' in candidate[2]:
-                device = devices.Hameg8118(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.capacitancemeter_devices.append(device)
-            elif 'Dummy' in candidate[2]: #For testing purposes 
-                device = devices.Dummy_Device(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-            else:
-                print('Device not supported')
-                return 
+
+            device = Device(port=candidate[0], id=candidate[1], rm=self.ui.rm, dev_type=candidate[2], cfg_path=candidate[3], device_handler = self.device_handler)  # Create the device object and add it to the device handler
+            
             widget = self.create_device_widget(candidate, device) #create the widget for the device
             self.ui.device_widgets.append(widget)
             self.ui.device_scrollLayout.addWidget(widget) # Add the device to the scroll area
-
-    def add_all_devices(self):
-        #This functions combines the refresh and add device functions to add all connected devices at once. DO NOT USE if you have a lot of devices connected, you will loose the overview of the devices 
-        self.device_handler.find_devices()
-        self.ui.select_decive.clear()
-        self.ui.select_decive.addItem('Select Device')
-        for candidate in self.device_handler.device_candidates:
-            self.device_handler.used_ids.append(candidate[1])
-            if 'Keithley K2200 SMU' in candidate[2]: # Check the type of the device and create the respective object 
-                device = devices.K2200(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.smu_devices.append(device)
-                self.K2200_warning()
-            elif 'Keithley K2400 SMU' in candidate[2]:
-                device = devices.K2400(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.smu_devices.append(device)
-            elif 'Keithley K2600 SMU' in candidate[2]:
-                device = devices.K2600(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.smu_devices.append(device)
-            elif 'Keithley K6487 SMU' in candidate[2]:
-                device = devices.K6487(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.smu_devices.append(device)
-            elif 'Keithley K2000 Voltmeter' in candidate[2]:
-                device = devices.K2000(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.voltmeter_devices.append(device)
-            elif 'Rhode&Schwarz NGE103B' in candidate[2]:
-                device = devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.lowV_devices.append(device)
-            elif 'HAMEG HMP4040' in candidate[2]:
-                device = devices.LowVoltagePowerSupplies(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-                self.device_handler.lowV_devices.append(device)
-            elif 'Dummy' in candidate[2]: #For testing purposes 
-                device = devices.Dummy_Device(port = candidate[0], id = candidate[1], rm =  self.ui.rm)
-            else:
-                print('Device not supported')
-                return 
-            widget = self.create_device_widget(candidate, device) #create the widget for the device
-            self.ui.device_widgets.append(widget) # Adds the widget to the list of device widgets
-            self.ui.device_scrollLayout.addWidget(widget) # Add the widget to the scroll area
-
+    
+    def add_all_devices():
+        return
+    
     def create_device_widget(self, candidate, device):
         #This function creates the widget for the device and adds it to the scroll area
         #The widget contains the ID of the device, a reset button, a clear buffer button and a remove button
@@ -160,48 +98,24 @@ class Functionality:
         device_layout = QGridLayout()
         
         device_layout.addWidget(QLabel(candidate[1]), 0, 0, 1, 3)  #Add the ID to the Layout
-    
-        reset_button = QPushButton('Reset')
-        reset_button.clicked.connect(lambda : self.reset_device(device))
-        device_layout.addWidget(reset_button, 1, 0)
-        clear_buffer_button = QPushButton('Clear Buffer')
-        clear_buffer_button.clicked.connect(lambda : self.clear_buffer(device))
-        device_layout.addWidget(clear_buffer_button, 1, 1)
-        close_button = QPushButton('Remove')
-        close_button.clicked.connect(lambda : self.remove_device(device, candidate[1], device_widget))
-        device_layout.addWidget(close_button, 1, 2)
-        if candidate[2] == 'Keithley K2000 Voltmeter':  # Add the pop up window to allow for advanced settings for the Keithley K2200 SMUs
-            advanced_settings = QPushButton('Advanced Settings')
-            advanced_settings.clicked.connect(lambda : self.open_parameter_dialog(device, candidate[1], candidate[2]))
-            device_layout.addWidget(advanced_settings, 2, 0, 1, 3)
-        if candidate[2] == 'Keithley K2400 SMU':  # Add the pop up window to allow for advanced settings for the Keithley K2400 SMUs
-            advanced_settings = QPushButton('Advanced Settings')
-            advanced_settings.clicked.connect(lambda : self.open_parameter_dialog(device, candidate[1], candidate[2]))
-            device_layout.addWidget(advanced_settings, 2, 0, 1, 3)
-        if candidate[2] == 'Keithley K2600 SMU':  # Add the pop up window to allow for advanced settings for the Keithley K2600 SMUs
-            advanced_settings = QPushButton('Advanced Settings')
-            advanced_settings.clicked.connect(lambda : self.open_parameter_dialog(device, candidate[1], candidate[2]))
-            device_layout.addWidget(advanced_settings, 2, 0, 1, 3)
-        
-        device_widget.setLayout(device_layout) 
+        device_layout.addWidget(QLabel(candidate[2]), 0, 3, 1, 3)  #Add the type of the device to the Layout
+        remove_button = QPushButton('Remove')
+        remove_button.clicked.connect(lambda: self.remove_device(device, device_widget))  #Connect the remove button to the remove function
+        device_layout.addWidget(remove_button, 1, 0, 1, 1)  #Add the remove button to the Layout
+        settings_button = QPushButton('Settings')
+        settings_button.clicked.connect(lambda: self.open_parameter_dialog(device, candidate[1]))  #Connect the settings button to the open parameter dialog function
+        device_layout.addWidget(settings_button, 1, 1, 1, 1)  #Add the settings button to the Layout
+
+        device_widget.setLayout(device_layout)
         return device_widget
 
-    def open_parameter_dialog(self, device, id, type):
+    def open_parameter_dialog(self, device, id):
         #This function opens the parameter dialog for the device
         #It is used to set the parameters for the device, like voltage range, current range, etc.
-        if type == 'Keithley K2000 Voltmeter':
-            dialog = parameter_dialog.ParameterDialog_K2000(device, id, self.ui.rm, self)
-            dialog.show()
-            self.open_parameter_dialogs.append(dialog)
-        if type == 'Keithley K2400 SMU':
-            dialog = parameter_dialog.ParameterDiaglog_K2400(device, id, self.ui.rm, self)
-            dialog.show()
-            self.open_parameter_dialogs.append(dialog)
-        if type == 'Keithley K2600 SMU':
-            dialog = parameter_dialog.ParameterDialog_K2600(device, id, self.ui.rm, self)
-            dialog.show()
-            self.open_parameter_dialogs.append(dialog)
-        
+        dialog = parameter_dialog.ParameterDialog(device.config["ui_settings"], id)
+        dialog.show()
+        self.open_parameter_dialogs.append(dialog)  #Add the dialog to the list of open dialogs
+
     def reset_device(self, device): 
         #Function for the device widget to reset the device
         try: 
@@ -217,25 +131,15 @@ class Functionality:
         except:
             pass
 
-    def remove_device(self, device, id, widget):
+    def remove_device(self, device, widget):
         #Function for the device widget to remove the device from the list of used devices
         #Remove the device from the list of used devices and delete the widget, this device can now be selected again
-        self.device_handler.used_ids.remove(id)
+        device.remove_from_device_list()
         if widget in self.ui.device_widgets:
             self.ui.device_widgets.remove(widget)
             widget.deleteLater()
-        if device in self.device_handler.smu_devices:
-            self.device_handler.smu_devices.remove(device)
-        if device in self.device_handler.voltmeter_devices:
-            self.device_handler.voltmeter_devices.remove(device)
-        if device in self.device_handler.lowV_devices:
-            self.device_handler.lowV_devices.remove(device)
-        if device in self.device_handler.capacitancemeter_devices:
-            self.device_handler.capacitancemeter_devices.remove(device)
-
-        device.close()
         return
-     
+    
     def enable_custom_sweep(self):
         #This function enables or disables the custom sweep mode 
         self.ui.custom_sweep = self.ui.use_custom_sweep_checkBox.isChecked()

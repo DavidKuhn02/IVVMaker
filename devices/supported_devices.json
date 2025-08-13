@@ -1,0 +1,56 @@
+[
+  {
+    "name": "K2000",
+    "match_id": ["KEITHLEY", "2000"],
+    "config": "devices/K2000.json",
+    "type": "Multimeter"
+  },
+  {
+    "name": "K2200",
+    "match_id": ["Keithley", "2200"],
+    "config": "devices/K2200.json",
+    "type": "SMU"
+  },
+  {
+    "name": "K2450",
+    "match_id": ["Keithley", "2450"],
+    "config": "devices/K2450.json",
+    "type": "SMU"
+  },
+  {
+    "name": "K2470",
+    "match_id": ["KEITHLEY", "2470"],
+    "config": "devices/K2470.json",
+    "type": "SMU"
+  },
+  {
+    "name": "K2600",
+    "match_id": ["Keithley", "2600", "2611"],
+    "config": "devices/K2600.json",
+    "type": "SMU"
+  },
+  {
+    "name": "K6487",
+    "match_id": ["Keithley", "6487"],
+    "config": "devices/K6487.json",
+    "type": "SMU"
+  },
+  {
+    "name": "NGE103B",
+    "match_id": ["NGE103B"],
+    "config": "devices/NGE103B.json",
+    "type": "Powersupply"
+  },
+  {
+    "name": "HMP4040",
+    "match_id": ["HMP4040"],
+    "config": "devices/HMP4040.json",
+    "type": "Powersupply"
+  },
+  {
+    "name": "Hameg8118",
+    "match_id": ["HM8118"],
+    "config": "devices/Hameg8118.json",
+    "type": "LCR"
+  }
+]
