@@ -1,6 +1,7 @@
 import json
-0import pyvisa as visa
+import pyvisa as visa
 import numpy as np
+import os
 # This module handles the connected devices
 
 class Device_Handler:   #Class that handles the devices and their IDs
@@ -13,7 +14,8 @@ class Device_Handler:   #Class that handles the devices and their IDs
         self.lowV_devices = [] # List of used low voltage power supplies
         self.capacitancemeter_devices = [] # List of used capacitance meters
         self.used_ids = [] # List of the ids of used devices
-        with open('devices/supported_devices.json', 'r') as f:
+        self.config_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'devices')
+        with open(os.path.join(self.config_dir, 'supported_devices.json'), 'r') as f:
             self.supported_devices = json.load(f)  # Load the supported devices from the JSON file
 
     def find_devices(self):
@@ -74,10 +76,26 @@ class Device:
         self.type = dev_type
         self.device_handler = device_handler  # Reference to the Device_Handler instance
         self.device = self.rm.open_resource(port)  # Open the port
+        self.config_path = cfg_path
         with open(cfg_path, 'r') as f:
             self.config = json.load(f)  # Load the device configuration from the JSON file
+        self.settings_path = os.path.join(self.device_handler.config_dir, "device_settings" , f"{self.assigned_id}.json")
+        
         self.init_device()
+        self.load_config()
         self.add_to_device_list()
+
+    def save_config(self):
+        # Save the current configuration to a settings file
+        with open(self.settings_path, 'w') as f:
+            json.dump(self.settings, f, indent = 2)
+
+    def load_config(self):
+        try:
+            with open(self.settings_path, 'r') as f:
+                self.settings = json.load(f)
+        except FileNotFoundError:
+            self.settings = {}
 
     def add_to_device_list(self):
         if self.type =='SMU':
@@ -121,6 +139,9 @@ class Device:
             id = self.device.query(cmd)
             return id
 
+    def return_assigned_id(self):
+        return self.assigned_id
+
     def return_port(self):
         cmd = self.config['commands']['return_port']
         if cmd:
@@ -131,9 +152,13 @@ class Device:
         self.device.close()
 
     def set_limit(self, limitI):
+        '''
+        Sets the current limit for the SMU.
+        param limitI: The current limit in uA
+        '''
         cmd = self.config['commands']['set_limit']
         if cmd:
-            self.device.write(cmd.format(limitI=limitI))
+            self.device.write(cmd.format(limitI=limitI*1e-6))
 
     def enable_output(self, state):
         if state:
@@ -210,7 +235,7 @@ class Device:
         }
         range = ranges.get(range, None)
         if range is not None:
-            if range == "AUTO":
+            if range == "Auto":
                 cmd = self.config['commands']['set_voltage_range_auto_on']
                 if cmd:
                     self.device.write(cmd)
@@ -236,7 +261,7 @@ class Device:
         }
         range = ranges.get(range, None)
         if range is not None:
-            if range == "AUTO":
+            if range == "Auto":
                 cmd = self.config['commands']['set_current_range_auto_on']
                 if cmd:
                     self.device.write(cmd)
@@ -248,9 +273,87 @@ class Device:
                 if cmd:
                     self.device.write(cmd)
 
+    def set_resistance_range(self, range):
+        range_dic = {
+            '100 Ohm': 100,
+            '1k Ohm': 1000,
+            '10k Ohm': 10000,
+            '100k Ohm': 100000,
+            '1M Ohm': 1000000,
+            '10M Ohm': 10000000,
+            'Auto': 'AUTO'
+        }
+        if range is not None:
+            if range == "Auto":
+                cmd = self.config['commands']['set_resistance_range_auto_on']
+                if cmd:
+                    self.device.write(cmd)
+            else:
+                cmd = self.config['commands']['set_resistance_range_auto_off']
+                if cmd:
+                    self.device.write(cmd)
+                cmd = self.config['commands']['set_resistance_range'].format(range=range_dic[range])
+                if cmd:
+                    self.device.write(cmd)
+
     def set_nplc(self, nplc):
         cmd = self.config['commands']['set_nplc'].format(nplc=nplc)
         if cmd:
             self.device.write(cmd)
 
-    def set_filter(self, filter):
+    def set_filter(self, filter, filter_num, filter_type):
+        filter_type_dic = {
+            "Moving Average": "MOV",
+            "Repeat Average": "REP"
+        }
+        if filter:
+            cmd = self.config['commands']['enable_filter']
+            if cmd:
+                self.device.write(cmd)
+        else:
+            cmd = self.config['commands']['disable_filter']
+            if cmd:
+                self.device.write(cmd)
+        cmd = self.config['commands']['set_filter_num'].format(filter_num=filter_num)
+        if cmd:
+            self.device.write(cmd)
+        cmd = self.config['commands']['set_filter_type'].format(filter_type=filter_type_dic[filter_type])
+        if cmd:
+            self.device.write(cmd)
+
+    def set_auto_zero(self, state):
+        if state:
+            cmd = self.config['commands']['enable_auto_zero']
+            if cmd:
+                self.device.write(cmd)
+        else:
+            cmd = self.config['commands']['disable_auto_zero']
+            if cmd:
+                self.device.write(cmd)
+
+    def set_highC(self, state):
+        if state:
+            print(self.assigned_id, "Enabled High C")
+            cmd = self.config['commands']['enable_highC']
+            if cmd:
+                self.device.write(cmd)
+        else:
+            print(self.assigned_id, "Disabled High C")
+            cmd = self.config['commands']['disable_highC']
+            if cmd:
+                self.device.write(cmd)
+
+    def set_measurement_type(self, quantity):
+        quantity_dic = {
+            'Voltage DC': 'VOLT:DC',
+            'Current DC': 'CURR:DC',
+            'Resistance (2 Wire)': 'RES',
+            'Voltage AC': 'VOLT:AC',
+            'Current AC': 'CURR:AC',
+            'Resistance (4 Wire)': 'FRES',
+            'Frequency': 'FREQ',
+            'Period': 'PER'
+        }
+        cmd = self.config['commands']['set_measurement_type'].format(quantity=quantity_dic[quantity])
+        if cmd:
+            self.device.write(cmd)

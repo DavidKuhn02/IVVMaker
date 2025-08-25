@@ -1,0 +1,11 @@
+{
+  "limitI": 8.7,
+  "voltage_range": "2V",
+  "current_range": "Auto",
+  "nplc": 1,
+  "high_capacitance": false,
+  "use_filter": false,
+  "filter_num": 10,
+  "filter_type": "Moving Average",
+  "auto_zero": true
+}

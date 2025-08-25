@@ -112,7 +112,7 @@ class Functionality:
     def open_parameter_dialog(self, device, id):
         #This function opens the parameter dialog for the device
         #It is used to set the parameters for the device, like voltage range, current range, etc.
-        dialog = parameter_dialog.ParameterDialog(device.config["ui_settings"], id)
+        dialog = parameter_dialog.ParameterDialog(device)
         dialog.show()
         self.open_parameter_dialogs.append(dialog)  #Add the dialog to the list of open dialogs
 

@@ -2,12 +2,12 @@
     "measurement_type": "IV",
     "IV": {
         "startV": 0.0,
-        "stopV": 0.0,
-        "stepV": 0.0,
-        "measurements_per_step": 1,
-        "time_between_measurements": 0.0,
-        "time_between_steps": 0.0,
-        "limitI": 0.0,
+        "stopV": 2.0,
+        "stepV": 1.0,
+        "measurements_per_step": 5,
+        "time_between_measurements": 0.2,
+        "time_between_steps": 0.4,
+        "limitI": 1.0,
         "custom_sweep": false,
         "custom_sweep_file": ""
     },

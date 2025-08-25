@@ -42,7 +42,7 @@ class MeasurementThread(QThread):
         #and sets the voltage to the start voltage 
         self.running = True #Flag to indicate that the measurement is running 
         for smu in self.device_handler.smu_devices:   #Reset the SMUs and set the current limit
-            smu.set_limit(float(self.limit_I*1e-6))
+            smu.set_limit(float(self.limit_I))
             smu.enable_output(True)
             smu.clear_buffer()
         if start == 0:   #If the start voltage is not 0, a rampup sequence is started
