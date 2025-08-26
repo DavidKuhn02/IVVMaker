@@ -171,12 +171,12 @@ class Device:
     def set_voltage(self, voltage):   #Available only for SMUs
         cmd = self.config['commands']['set_voltage']
         if cmd:
-            self.device.write(cmd.format(voltage=voltage))
+            self.device.write(cmd.format(voltage=str(voltage)))
 
     def set_frequency(self, frequency):  # Available only for LCRs
         cmd = self.config['commands']['set_frequency']
         if cmd:
-            self.device.write(cmd.format(frequency=frequency))
+            self.device.write(cmd.format(frequency=str(frequency)))
 
     def measure_voltage(self):  #Available only for SMUs
         cmd = self.config['commands']['measure_voltage']

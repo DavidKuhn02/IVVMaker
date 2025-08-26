@@ -227,12 +227,8 @@ class Ui_MainWindow(QWidget):
         # If the user wants to quit, close all devices and quit the application
         # If the user does not want to quit, ignore the event
         # This is a standard close event for PyQt5 applications
-        reply = QMessageBox.question(self, 'Quit?', 'Are you sure you want to quit?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            self.logic.closeEvent()
-            event.accept()
-        else:
-            event.ignore()
+        self.logic.closeEvent()
+        event.accept()
 
     def changeUI_IV(self):
         # Function to change the UI to the IV measurement
