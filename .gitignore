@@ -2,6 +2,9 @@ data/
 __pycache__/
 .vscode/
 
+
+latest.json
+
 Old.py
 Old_Main.py
 UI-DoubleIVV.py

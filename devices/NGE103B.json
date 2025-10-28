@@ -1,5 +1,5 @@
 {
-  "name": "LowVoltagePowerSupplies",
+  "name": "NGE103B",
   "type": "powersupply",
   "init_commands": ["*RST"],
   "settings": {},
@@ -14,4 +14,9 @@
     "close": "CLOSE"
   },
   "num_channels": 3
+
+
 }
+
+
+

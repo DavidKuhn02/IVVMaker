@@ -86,8 +86,15 @@ class Functionality:
             self.ui.device_widgets.append(widget)
             self.ui.device_scrollLayout.addWidget(widget) # Add the device to the scroll area
     
-    def add_all_devices():
-        return
+    def add_all_devices(self):
+        self.refresh_devices()  
+        for candidate in self.device_handler.device_candidates:
+            device = Device(port=candidate[0], id=candidate[1], rm=self.ui.rm, dev_type=candidate[2], cfg_path=candidate[3], device_handler = self.device_handler)  # Create the device object and add it to the device handler
+            
+            widget = self.create_device_widget(candidate, device) #create the widget for the device
+            self.ui.device_widgets.append(widget)
+            self.ui.device_scrollLayout.addWidget(widget) # Add the device to the scroll area
+        
     
     def create_device_widget(self, candidate, device):
         #This function creates the widget for the device and adds it to the scroll area

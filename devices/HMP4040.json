@@ -1,5 +1,5 @@
 {
-  "name": "LowVoltagePowerSupplies",
+  "name": "HMP4040",
   "type": "powersupply",
   "init_commands": ["*RST"],
   "settings": {},
@@ -13,5 +13,7 @@
     "read_voltage": "MEAS:VOLT?",
     "close": "CLOSE"
   },
-  "num_channels": 4
+  "num_channels": 4,
+  
+
 }

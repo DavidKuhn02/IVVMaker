@@ -11,6 +11,7 @@ class ParameterDialog(QDialog):
         self.setWindowTitle(f'Settings for {self.device.return_assigned_id()}')
         self.setGeometry(320, 180, 400, 300)    
         layout = QVBoxLayout()
+        print("Opening Dialog for device with config:", self.device)
         self.widgets = {}
         for field in device.config["ui_settings"]:
             label = QLabel(field['label'])
@@ -24,7 +25,7 @@ class ParameterDialog(QDialog):
                 widget.setChecked(field.get('default'))
             elif field['type'] == 'int':
                 widget = QSpinBox()
-                widget.setMinimum(field.get('min', 0))
+                widget.setMinimum(field.get('min', 0)) 
                 widget.setMaximum(field.get('max', 100))
                 widget.setSingleStep(field.get('step', 1))
                 widget.setValue(field.get('default', 0))
@@ -42,7 +43,7 @@ class ParameterDialog(QDialog):
             layout.addWidget(widget)
             self.widgets[field['name']] = widget
 
-
+        print(self.widgets)
         self.assign_widget_signals()
         self.setLayout(layout)
         self.load_config()
@@ -88,12 +89,19 @@ class ParameterDialog(QDialog):
         function_name = widget.property("function")
         if function_name:
             widget_names = widget.property("values")
-            widgets = [self.widgets[name] for name in widget_names]
-            value = [self.get_widget_value(w) for w in widgets]
+            print("[debug] widget names list", widget_names)
+            if isinstance(widget_names, str):
+                value = self.get_widget_value(widget)
+                print(value)
+            else:
+                widgets = [self.widgets[name] for name in widget_names]
+                value = [self.get_widget_value(w) for w in widgets]
             func = getattr(self.device, function_name, None)
         if func and callable(func) and value is not None:
-            if len(value) == 1:
-                func(value[0])
+            if isinstance(value, str):
+                func(value)
+            elif len(value) == 1:     
+                func((value[0]))
             else:
                 func(*value)
 

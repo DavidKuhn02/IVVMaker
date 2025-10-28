@@ -13,5 +13,7 @@
     "measure": "XALL?",
     "query_failsave": "{command}",
     "close": "CLOSE"
-  }
-}
+  },
+  "number_of_channels": 4
+
+} 
