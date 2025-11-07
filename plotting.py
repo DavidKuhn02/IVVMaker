@@ -118,7 +118,7 @@ class PlotCanvas(FigureCanvas):
             self.ax = self.fig.add_subplot(111)  # Add a new subplot
             self.parameters['x_label'] = 'Voltage [V]'
             self.parameters['y_label'] = 'Current [A]'
-            self.ax.autoscale_view()
+            self.ax.autoscale_view(scalex=True, scaley=True)
         elif type == 'CV':
             self.ax1 = self.fig.add_subplot(2, 2, 1)
             self.ax2 = self.fig.add_subplot(2, 2, 2)
@@ -127,14 +127,14 @@ class PlotCanvas(FigureCanvas):
             self.ax4 = self.fig.add_subplot(2, 2, 4)    
 
 #
-            self.ax.autoscale_view()
+            self.ax.autoscale_view(scalex=True, scaley=True)
         elif type == 'Constant Voltage':
             self.ax = self.fig.add_subplot(111)
             self.parameters['x_label'] = 'Number of Measurements'
             self.parameters['y_label'] = 'Current [A]'
-            self.ax.autoscale_view()
-        self.draw_plot()    
-    
+            self.ax.autoscale_view(scalex=True, scaley=True)
+        self.draw_plot()
+
     def clear_live_data(self):
         #This function will clear the live data
         self.live_x_data = []
@@ -142,9 +142,10 @@ class PlotCanvas(FigureCanvas):
         self.voltage_cv = []  
         self.frequencies_cv = [] 
         self.impedance_cv = [] #Only for CV to store impedance data
-        self.phase_cv = [] #Only for CV to store phase data
+        self.phase_cv = [] #Only for CV to store phase data        
         self.draw_plot()
-
+        self.ax.autoscale_view(scalex=True, scaley=True)
+        
     def clear_old_data(self):
         #This function will clear the old data
         old_data_lines = [line for line in self.ax.lines if line.get_label() != 'Live Data']
@@ -153,6 +154,7 @@ class PlotCanvas(FigureCanvas):
         self.old_x_data = []
         self.old_y_data = []
         self.draw_plot()
+        self.ax.autoscale_view(scalex=True, scaley=True)
         
     def load_old_data(self):
         #This function will load the old data
